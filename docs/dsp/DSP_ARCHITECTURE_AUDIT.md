@@ -632,8 +632,25 @@ pipeline drops rising from 64 to 115, queue high-water 2, backlog and overload
 yields, while USB driver overrun/drop counters stayed zero. The cause of this
 transient is unproven; the final window only shows it stopped growing.
 Also, 985 of the final 8,192 blocks exceeded the 6.827 ms interval, and no
-exclusive live measurement was made at 2.56/2.88/3.20 MS/s. D2's
-exclusive-lab average is below 70% at this one rate **without** downstream
-WFM processing, but it is **not yet selected** for all-rate production WFM.
-The local transcripts are
-`artifacts/dsp-stage2/live-d2-internal-*.txt` (untracked).
+exclusive live measurement was made at 2.56/2.88 MS/s. D2's exclusive-lab
+average is below 70% at 2.40 MS/s **without** downstream WFM processing,
+but it is **not selected** for all-rate production WFM.
+
+At **3.20 MS/s**, a lab-only `RTL_DSP LAB RATE 3200000` command started FM
+at the requested physical rate after `RTL_STOP`; readback confirmed
+3,200,000 S/s. With `RTL_DSP LAB LIVE D2 INTERNAL`, the final 8,192-block
+ring measured frontend avg/p95/p99 **3.888/6.711/7.487 ms** and total DSP
+avg/p95/p99 **4.945/8.851/9.636 ms**. The clean 53.8-second counter window
+measured 94% DSP load and 3.117 MS/s processed; OrcSDR IQ pipeline drops
+rose from 221 to 489 (+268), while USB driver overruns and drops stayed at
+zero. Queue high-water was 2 and overload yields were 587. This fails the
+drop-free live gate even with the existing WFM demodulator, stereo, RDS and
+audio stages bypassed. D2 must not be integrated as the all-rate WFM
+frontend on this evidence. Silence during this exclusive/internal-output
+test was intentional; the user reported the spectrum became stationary only
+*after* the radio was stopped, which is expected and does not establish a
+streaming-display failure. The test ended with live mode off, radio stopped,
+and the rate override cleared (`RTL_DSP LAB RATE DEFAULT`).
+
+Local transcripts are `artifacts/dsp-stage2/live-d2-internal-*.txt` and
+`artifacts/dsp-stage2/live-d2-320-*.txt` (untracked).

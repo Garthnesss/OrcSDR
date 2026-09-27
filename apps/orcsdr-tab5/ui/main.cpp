@@ -16481,6 +16481,32 @@ void process_command(char* command) {
     return;
   }
 #if ORCSDR_DSP_LAB
+  if (strncmp(command, "RTL_DSP LAB RATE ", 17) == 0) {
+    if (rtl_should_resume_after_disconnect(rtl_capture_state.load(std::memory_order_acquire))) {
+      Serial.println("LAB_RATE_ERROR radio_running");
+      return;
+    }
+    if (strcmp(command + 17, "DEFAULT") == 0) {
+      rtl_rate_override_sps.store(0, std::memory_order_release);
+      Serial.println("LAB_RATE default");
+      return;
+    }
+    if (strcmp(command + 17, "3200000") != 0 || !rtl_device_ready() ||
+        !esp_rtl_sdr_is_rate_supported(3200000)) {
+      Serial.println("LAB_RATE_ERROR use_3200000_or_DEFAULT");
+      return;
+    }
+    rtl_rate_override_sps.store(3200000, std::memory_order_release);
+    const uint32_t frequency = rtl_ui_band == RtlBand::fm
+                                   ? rtl_ui_frequency_hz : rtl_band_default_frequency(RtlBand::fm);
+    if (!queue_local_rtl_listen(RtlBand::fm, frequency, false)) {
+      rtl_rate_override_sps.store(0, std::memory_order_release);
+      Serial.println("LAB_RATE_ERROR start_failed");
+      return;
+    }
+    Serial.println("LAB_RATE queued=1 rate=3200000 band=FM");
+    return;
+  }
   if (strncmp(command, "RTL_DSP LAB", 11) == 0) {
     const RtlCaptureState state = rtl_capture_state.load(std::memory_order_acquire);
     orcsdr::dsp::lab::command(
