@@ -8,6 +8,13 @@ M5Burner package was installed and booted on the owner Tab5 before publication.
 That release evidence does not automatically prove later `main` commits or
 other hardware.
 
+Development branch `claude/dsp-multirate` (draft PR #114, stacked on #113)
+retains the Stage-1 optimized production DSP path. Stage-2 D/D2/D3 frontends
+are **Experimental**, compiled only with `ORCSDR_DSP_LAB=1`, and are not WFM
+audio integrations. The dated [DSP closeout](docs/validation/dsp-stage1-stage2-closeout-2026-09-27.md)
+records their evidence; this branch is not a published release or merged-main
+capability claim.
+
 The candidate pins `esp_rtl_sdr` at `f62c5cdaa73a18f544413e4eca0f1f62abce285e` on the driver branch
 `codex/v4l-am1280-direct-sampling` (0.8.0-rc4, not yet merged to `master`):
 master `9a98724` plus PC-measured V4L/V4/V3c gain, AGC, bias and tuner-bandwidth
@@ -77,6 +84,10 @@ override this document for current state. Future work belongs in
 | LoRa/Meshtastic receive | **Hardware-Verified / Experimental** | Native receive and dashboard paths exist and traffic has been observed. Reliability, missed-packet rate, backlog behavior, and antenna coverage remain bounded experiments. |
 | POCSAG | **RF-Verified at 1200 baud / Regression-Tested** | `TEST` for CAPCODE 1234560 was decoded on Tab5 from an in-house 433.920 MHz source and independently on a Flipper Zero. 512/2400 are host-tested only. Identity/message state is RAM-only; persistent searchable archive is Not Implemented. |
 | RF Lab and RF Visualizer | **Implemented / Regression-Tested** | Integrated screens and self-check/regression tooling exist; they do not prove RF calibration. |
+| Stage-1 production DSP optimization (PR #114) | **Hardware-Verified / Regression-Tested on the development branch** | Same saved live IQ gave bit-identical FM, NFM/WX, AM, CB AM/LSB/USB output/state; release-build 2.40 MS/s WFM load was about 45% versus 68% before. This is not yet merged-main or release acceptance. |
+| Higher-rate IQ acquisition (PR #114) | **Hardware-Verified / Experimental** | The driver delivered 2.40/2.56/2.88/3.20 MS/s in bounded transport windows. This is not audio or every spectrum/analysis workload acceptance. |
+| 3.20 MS/s WFM audio | **Unsupported / Experimental research** | D2 and D3 exclusive-live frontends bypassed production audio and showed backlog/loss. Normal WFM stays at 2.40 MS/s. |
+| 3.20 MS/s NFM/WX audio | **Not Verified / Experimental** | No mode-specific production audio integration or RF acceptance; this does not establish impossibility. |
 | Wi-Fi analysis | **Implemented / Hardware-Verified / Experimental** | ESP-Hosted 3.0.6 and access-point survey work on the owner Tab5. Scan, connect, power-off, and catalog I/O deliberately pause and then resume radio reception. |
 | Signed data catalog | **Hardware-Verified / Experimental** | Public `data-catalog-v1` exists; FAA catalog reinstall and radio recovery are recorded. This does not mean every proposed pack is published or accepted. |
 | LAN web console | **Implemented / Experimental** | Opt-in HTTP telemetry, audio, spectrum, tuning, volume/mute, span/step, and dashboard actions. No TLS or authentication; trusted LAN only. |
@@ -110,6 +121,25 @@ behavior, release-package installation, or long-duration soak behavior.
   RF acceptance. P25 Phase II voice/audio is Not Implemented.
 - Wi-Fi credentials and signing material are private and are not documentation
   or CI inputs.
+- On PR #114, `rtl_default_sample_rate()` selects 2.40 MS/s for WFM,
+  NFM/Weather, AM, CB, Shortwave and Browse; P25/LoRa/POCSAG default to
+  960 kS/s and ADS-B to 2.048 MS/s. These device acquisition rates are not
+  the 240 kS/s internal WFM MPX or 48 kHz output-audio rates. RF Lab has an
+  existing explicit custom-rate control; it does not confer audio support.
+- The 2026-09-27 normal-firmware PR #114 smoke found an unresolved startup
+  audio anomaly: FM was
+  initially silent even after unplugging an audio cable, although a built-in
+  tone played; reboot restored audible 96.1 MHz FM, stereo lock and KZEL RDS.
+  The operator then confirmed audio in Weather/NFM, AM and CB AM/LSB/USB
+  (without CB traffic), plus FM stop/restart and retune recovery. The cause
+  of the initial silence/reboot dependence is Not Verified. Hosted Wi-Fi
+  initialization also failed this run despite a matching C6 version. Neither
+  result should be silently promoted to release acceptance.
+- The operator reports degraded sound/DSP behavior on RF Lab LIVE during FM.
+  A clean RF Lab window showed 64% DSP load, but no new drops or backlog;
+  ordinary FM audio was clear after cycling AM/CB/FM, and the issue did not
+  recur on returning to RF Lab. This is not yet a diagnosed or fixed RF Lab
+  regression.
 
 ## Authoritative document map
 

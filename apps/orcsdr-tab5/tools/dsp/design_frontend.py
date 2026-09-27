@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
 """Design the Stage-2 multirate frontend filters and emit dsp/frontend_coeffs.hpp.
 
-Chain (Candidate B): CU8 -> halfband /2 -> halfband /2 -> rational L/M polyphase
-(which is also the channel filter) -> 240 kS/s complex baseband for WFM.
+Base chain: CU8 -> halfband /2 -> halfband /2 -> rational L/M polyphase.
+Targeted D3 experiment: one additional Q15 /2 before the rational stage.
+Both end at 240 kS/s complex baseband for WFM; production is unchanged.
 
 Specs (complex baseband, symmetric around DC):
   channel passband  |f| <= 100 kHz, ripple <= 0.1 dB (polyphase stage)
   alias-free edge   |f| >= 140 kHz must be rejected >= 60 dB before any
                     decimation can fold it into |f| <= 100 kHz at 240k
-  halfbands         only protect |f| <= 140 kHz from folding (>= 60 dB);
-                    they are designed at the tightest rate (2.40 MS/s) and
-                    reused at 2.56/2.88/3.20, where they have more margin.
+  HB1/HB2           protect |f| <= 140 kHz from folding (>= 60 dB).
+  HB3 (/8 only)     protects |f| <= 100 kHz; stopband starts at 200 kHz
+                    at the tightest 600 kS/s input. Its Q6 output avoids
+                    int16 overflow; the final output restores the 2x gain.
 
 Run:  python tools/dsp/design_frontend.py            (writes the header)
       python tools/dsp/design_frontend.py --report   (prints specs only)
@@ -34,6 +36,12 @@ PLANS = [  # device rate, intermediate after /4, L, M
     (2_560_000, 640_000, 3, 8),
     (2_880_000, 720_000, 1, 3),
     (3_200_000, 800_000, 3, 10),
+]
+DIV8_PLANS = [  # one targeted /8 experiment: device rate, intermediate, L, M
+    (2_400_000, 300_000, 4, 5),
+    (2_560_000, 320_000, 3, 4),
+    (2_880_000, 360_000, 2, 3),
+    (3_200_000, 400_000, 3, 5),
 ]
 Q15 = 32768
 
@@ -64,17 +72,17 @@ def response_db(h: np.ndarray, fs: float, freqs: np.ndarray) -> np.ndarray:
     return 20 * np.log10(np.maximum(np.abs(H), 1e-12))
 
 
-def hb_metrics(h: np.ndarray, fs: float) -> tuple[float, float]:
-    """(passband ripple dB over |f|<=STOP_HZ, worst rejection over the fold band)."""
-    pb = response_db(h, fs, np.linspace(0, STOP_HZ, 400))
-    fold = response_db(h, fs, np.linspace(fs / 2 - STOP_HZ, fs / 2, 400))
+def hb_metrics(h: np.ndarray, fs: float, guard_hz: float = STOP_HZ) -> tuple[float, float]:
+    """(passband ripple dB through guard, worst rejection over the fold band)."""
+    pb = response_db(h, fs, np.linspace(0, guard_hz, 400))
+    fold = response_db(h, fs, np.linspace(fs / 2 - guard_hz, fs / 2, 400))
     return float(pb.max() - pb.min()), float(-fold.max())
 
 
-def smallest_halfband(fs: float) -> np.ndarray:
+def smallest_halfband(fs: float, guard_hz: float = STOP_HZ) -> np.ndarray:
     for taps in range(7, 200, 4):
-        h = halfband(taps, fs, STOP_HZ)
-        ripple, rej = hb_metrics(h, fs)
+        h = halfband(taps, fs, guard_hz)
+        ripple, rej = hb_metrics(h, fs, guard_hz)
         if rej >= ATTEN_DB:
             return h
     raise RuntimeError("no halfband met spec")
@@ -125,19 +133,29 @@ def main() -> None:
 
     hb1 = smallest_halfband(2_400_000)
     hb2 = smallest_halfband(1_200_000)
+    hb3 = smallest_halfband(600_000, PASS_HZ)
     report = []
-    for name, h, fs in (("HB1", hb1, 2.4e6), ("HB2", hb2, 1.2e6)):
-        ripple, rej = hb_metrics(h, fs)
+    for name, h, fs, guard in (("HB1", hb1, 2.4e6, STOP_HZ),
+                               ("HB2", hb2, 1.2e6, STOP_HZ),
+                               ("HB3", hb3, 600e3, PASS_HZ)):
+        ripple, rej = hb_metrics(h, fs, guard)
         hq = q15(h) / Q15
-        rq, jq = hb_metrics(hq, fs)
+        rq, jq = hb_metrics(hq, fs, guard)
         nz = int(np.count_nonzero(np.abs(h) > 0))
         report.append(f"{name}: {len(h)} taps ({nz} nonzero, {(nz - 1) // 2} unique side taps) "
                       f"ripple {ripple:.4f} dB, fold rejection {rej:.1f} dB (float) / {jq:.1f} dB (Q15); "
                       f"sum|h| {np.abs(h).sum():.4f}; delay {(len(h) - 1) / (2 * fs) * 1e6:.2f} us")
     hb1_bound = math.ceil(16384 * np.abs(q15(hb1)).sum() / Q15) + 1
     hb2_bound = math.ceil(hb1_bound * np.abs(q15(hb2)).sum() / Q15) + 1
+    hb3_acc_bound = hb2_bound * int(np.abs(q15(hb3)).sum()) + (1 << 15)
+    assert hb3_acc_bound < 2**31
+    # HB3 stores half-scale Q6 so its conservative any-input bound fits int16.
+    hb3_bound = math.ceil(hb3_acc_bound / (2 * Q15))
+    assert hb3_bound < 32768
+    report.append(f"HB3 bound: acc {hb3_acc_bound} (<2^31), half-scale stage {hb3_bound} (<32768)")
     protos = []
-    for rate, mid, L, M in PLANS:
+    div8_protos = []
+    for rate, mid, L, M in PLANS + DIV8_PLANS:
         h = polyphase_proto(mid, L)
         fs = mid * L
         pb = response_db(h / L, fs, np.linspace(0, PASS_HZ, 400))
@@ -146,11 +164,12 @@ def main() -> None:
         sbq = response_db(hq / L, fs, np.linspace(STOP_HZ, fs / 2, 4000))
         pbq = response_db(hq / L, fs, np.linspace(0, PASS_HZ, 400))
         phase_abs = max(sum(abs(int(v)) for v in q15(h)[p::L]) for p in range(L))
-        acc_bound = hb2_bound * phase_abs
+        is_div8 = (rate, mid, L, M) in DIV8_PLANS
+        acc_bound = (hb3_bound if is_div8 else hb2_bound) * phase_abs
         assert acc_bound < 2**31
         per_phase = len(h) // L
-        protos.append((rate, mid, L, M, h))
-        report.append(f"PP {rate / 1e6:.2f}M: {mid // 1000}k x{L}/{M} proto {len(h)} taps "
+        (div8_protos if is_div8 else protos).append((rate, mid, L, M, h))
+        report.append(f"PP {'/8 ' if is_div8 else ''}{rate / 1e6:.2f}M: {mid // 1000}k x{L}/{M} proto {len(h)} taps "
                       f"({per_phase}/phase) ripple {pb.max() - pb.min():.4f} dB "
                       f"(Q15 {pbq.max() - pbq.min():.4f} dB) "
                       f"stop {-sb.max():.1f} dB (float) / {-sbq.max():.1f} dB (Q15); "
@@ -169,11 +188,15 @@ def main() -> None:
     out.append(f"inline constexpr float kStopHz = {STOP_HZ:.1f}f;")
     out.append(f"inline constexpr float kAttenDb = {ATTEN_DB:.1f}f;")
     out.append("")
-    for name, h in (("kHb1", hb1), ("kHb2", hb2)):
+    for name, h in (("kHb1", hb1), ("kHb2", hb2), ("kHb3", hb3)):
         out.append(c_array(f"{name}F", "float", h))
         out.append(c_array(f"{name}Q15", "int16_t", q15(h)))
     for rate, mid, L, M, h in protos:
         tag = f"kPp{rate // 10000}"
+        out.append(c_array(f"{tag}F", "float", h))
+        out.append(c_array(f"{tag}Q15", "int16_t", q15(h)))
+    for rate, mid, L, M, h in div8_protos:
+        tag = f"kPpDiv8{rate // 10000}"
         out.append(c_array(f"{tag}F", "float", h))
         out.append(c_array(f"{tag}Q15", "int16_t", q15(h)))
     out.append("struct PpPlan {\n  uint32_t device_rate;\n  uint32_t mid_rate;\n  uint16_t L;\n"
@@ -183,6 +206,11 @@ def main() -> None:
         tag = f"kPp{rate // 10000}"
         items.append(f"    {{{rate}u, {mid}u, {L}, {M}, {tag}F, {tag}Q15, {len(h)}}}")
     out.append("inline constexpr PpPlan kPlans[] = {\n" + ",\n".join(items) + "};")
+    items = []
+    for rate, mid, L, M, h in div8_protos:
+        tag = f"kPpDiv8{rate // 10000}"
+        items.append(f"    {{{rate}u, {mid}u, {L}, {M}, {tag}F, {tag}Q15, {len(h)}}}")
+    out.append("inline constexpr PpPlan kDiv8Plans[] = {\n" + ",\n".join(items) + "};")
     out.append("")
     out.append("}  // namespace orcsdr::dsp::coeffs")
     Path(args.out).write_text("\n".join(out) + "\n", encoding="utf-8", newline="\n")

@@ -13868,8 +13868,6 @@ bool request_hot_retune_for(orcsdr::radio::Token token, uint32_t frequency_hz) {
       rtl_am_gain_auto_enabled.load(std::memory_order_relaxed))
     rtl_am_gain_auto_restart.store(true, std::memory_order_release);
   if (ui_changed && rtl_ui_band == RtlBand::fm) {
-    if (rtl_fm_gain_auto_enabled.load(std::memory_order_relaxed))
-      rtl_fm_gain_auto_restart.store(true, std::memory_order_release);
     rtl_fm_force_lo_apply.store(true, std::memory_order_release);
     if (!rtl_auto_fm_active.load(std::memory_order_relaxed) &&
         !rtl_fm_preset_scan_active.load(std::memory_order_relaxed)) {
@@ -16350,7 +16348,7 @@ void process_command(char* command) {
     Serial.printf("RTL_TOOL_STATUS tool=%s\n", orc_tool_name(orc_tool_current()));
     return;
   }
-  // The benchmark lab must be able to stop auto-started radio capture over serial.
+  // ORCSDR_DSP_LAB is a compile-time zero in the normal build.
   if (strcmp(command, "RTL_STOP") == 0 &&
       (authenticated || ORC_LORA_TEST_BUILD || ORCSDR_DSP_LAB)) {
     if (!rtl_should_resume_after_disconnect(
@@ -16491,12 +16489,13 @@ void process_command(char* command) {
       Serial.println("LAB_RATE default");
       return;
     }
-    if (strcmp(command + 17, "3200000") != 0 || !rtl_device_ready() ||
-        !esp_rtl_sdr_is_rate_supported(3200000)) {
-      Serial.println("LAB_RATE_ERROR use_3200000_or_DEFAULT");
+    const uint32_t rate = strcmp(command + 17, "2560000") == 0 ? 2560000u
+                          : strcmp(command + 17, "3200000") == 0 ? 3200000u : 0u;
+    if (!rate || !rtl_device_ready() || !esp_rtl_sdr_is_rate_supported(rate)) {
+      Serial.println("LAB_RATE_ERROR use_2560000_3200000_or_DEFAULT");
       return;
     }
-    rtl_rate_override_sps.store(3200000, std::memory_order_release);
+    rtl_rate_override_sps.store(rate, std::memory_order_release);
     const uint32_t frequency = rtl_ui_band == RtlBand::fm
                                    ? rtl_ui_frequency_hz : rtl_band_default_frequency(RtlBand::fm);
     if (!queue_local_rtl_listen(RtlBand::fm, frequency, false)) {
@@ -16504,7 +16503,7 @@ void process_command(char* command) {
       Serial.println("LAB_RATE_ERROR start_failed");
       return;
     }
-    Serial.println("LAB_RATE queued=1 rate=3200000 band=FM");
+    Serial.printf("LAB_RATE queued=1 rate=%u band=FM\n", rate);
     return;
   }
   if (strncmp(command, "RTL_DSP LAB", 11) == 0) {

@@ -4,8 +4,8 @@
 #include <cstdint>
 
 // Stage-2 multirate frontend candidates (benchmark lab only; not connected to
-// any live demodulator). CU8 -> halfband /2 -> halfband /2 -> rational L/M
-// polyphase channel filter -> complex float at 240 kS/s.
+// any live demodulator). CU8 -> two halfbands /4 -> rational L/M polyphase
+// channel filter -> complex float at 240 kS/s. D3 alone inserts a third /2.
 //
 // Numeric contract (Q formats), see docs/dsp/DSP_ARCHITECTURE_AUDIT.md §15:
 //  - CU8 centering: c = u - 128, an integer in [-128, 127]. The float oracle
@@ -21,6 +21,8 @@
 //  - Saturation: cannot occur for any CU8 input (worst |HB2 out| = 24170 <
 //    32767), so the hot loops do not saturate; the lab verifies the bound.
 //  - Output: complex float in c units (same scale the demodulators use today).
+//  - D3 HB3: stores half-scale Q6; bound 17277 < int16, accumulator bound
+//    1132211348 < int32. Final polyphase output is doubled back to c units.
 namespace orcsdr::dsp::mr {
 
 struct Cu8 { uint8_t i, q; };
@@ -34,6 +36,7 @@ enum class Candidate : uint8_t {
   c_espdsp_arp4,  // C: ESP-DSP dsps_fird_s16_arp4 (P4 SIMD + HWLOOP)
   d_q15_sparse,   // D: custom Q15, zero taps skipped, symmetric pairs folded
   d2_q15_specialized,  // D2: same Q15 math, fixed coefficients/rate plans (lab only)
+  d3_q15_div8,         // D3: one more sparse Q15 /2 before the exact rational stage
   e_pie_pp,       // E1: D halfbands + P4 PIE SIMD Q15 polyphase (unrolled, no
                   //     esp.lp.setup / HWLOOP); bit-identical to D + pp_q15
   e_pie_all,      // E2: PIE for both halfbands and the polyphase (dot products
@@ -49,9 +52,9 @@ const char* candidate_name(Candidate c);
 const char* pp_name(PpKind p);
 
 struct StageCycles {
-  uint32_t hb1 = 0, hb2 = 0, pp = 0, other = 0;
-  void clear() { hb1 = hb2 = pp = other = 0; }
-  uint32_t total() const { return hb1 + hb2 + pp + other; }
+  uint32_t hb1 = 0, hb2 = 0, hb3 = 0, pp = 0, other = 0;
+  void clear() { hb1 = hb2 = hb3 = pp = other = 0; }
+  uint32_t total() const { return hb1 + hb2 + hb3 + pp + other; }
 };
 
 struct MemUse {
@@ -118,9 +121,11 @@ class Frontend {
   Cf32 hb1_hist_f_[8]{};
   uint8_t hb1_phase_ = 0;
   uint8_t hb2_phase_ = 0;
+  uint8_t hb3_phase_ = 0;
 
   // HB2 input buffer: history (kHb2Taps - 1) then up to chunk_in/2 samples.
   void* hb2_buf_ = nullptr;
+  void* hb3_buf_ = nullptr;
   // PP input buffer: history (P - 1) then up to chunk_in/4 samples.
   void* pp_buf_ = nullptr;
 

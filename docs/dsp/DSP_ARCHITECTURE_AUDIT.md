@@ -1,6 +1,17 @@
-# OrcSDR DSP architecture audit and multirate plan
+# OrcSDR DSP architecture audit and multirate research (historical)
 
-Status: **Stage 1 complete and hardware-verified** (optimization only; §12).
+Status: **Stage 1 accepted production optimization; Stage 2 research complete**.
+D/D2/D3 remain experimental lab candidates. Universal 3.20 MS/s WFM
+integration was rejected for the measured Tab5 realtime budget. Normal
+firmware retains the Stage-1 optimized existing demodulator. Current capability
+is governed by [PROJECT_STATUS](../../PROJECT_STATUS.md), current ownership by
+[architecture](../../architecture.md), and future work by
+[Roadmap](../../Roadmap.md). The dated
+[closeout record](../validation/dsp-stage1-stage2-closeout-2026-09-27.md)
+separates historical measurements from production acceptance.
+
+Historical detail follows. Sections 0-10 and the original Stage-3 gates are
+superseded planning text, not current requirements.
 Output is bit-identical to the pre-Stage-1 code on saved live IQ for FM, NFM,
 AM, CB AM and CB LSB/USB, and for RDS (live and SD replay). DSP state is now
 owned by the DSP task (§13). Stage 2 bench findings are in §15; the multirate
@@ -236,6 +247,12 @@ main.cpp keeps only routing/lifecycle: it hands `IqBlock` views to `frontend`
 and receives 48k audio. Its line count must go down.
 
 ## 10. Implementation sequence and gates
+
+**Superseded:** the original Stage-3 all-rate WFM requirement below was a
+research hypothesis, not an open production acceptance gate. D2/D3 exclusive
+live measurements rejected universal 3.20 MS/s WFM on the current Tab5
+budget. See the dated closeout record and Roadmap for separately gated future
+work; do not start Stage 3 from this table.
 
 | Stage | Work | Gate (must pass before next) |
 |---|---|---|
@@ -632,9 +649,21 @@ pipeline drops rising from 64 to 115, queue high-water 2, backlog and overload
 yields, while USB driver overrun/drop counters stayed zero. The cause of this
 transient is unproven; the final window only shows it stopped growing.
 Also, 985 of the final 8,192 blocks exceeded the 6.827 ms interval, and no
-exclusive live measurement was made at 2.56/2.88 MS/s. D2's exclusive-lab
+exclusive live measurement was made at 2.88 MS/s. D2's exclusive-lab
 average is below 70% at 2.40 MS/s **without** downstream WFM processing,
 but it is **not selected** for all-rate production WFM.
+
+At **2.56 MS/s**, the lab-only `RTL_DSP LAB RATE 2560000` command started FM
+at the exact requested physical rate (driver readback matched). With
+`RTL_DSP LAB LIVE D2 INTERNAL`, the final 8,192-block ring measured frontend
+avg/p95/p99 **3.689/6.806/7.622 ms** and total DSP avg/p95/p99
+**4.591/8.358/9.045 ms**; 1,186 blocks exceeded the 6.4 ms interval.
+The clean counter window processed **2,560,048 samples/s** at **71% DSP load**,
+with queue high-water 0, backlog 0, overload yields 0, and zero OrcSDR
+pipeline or USB driver drops. This establishes a drop-free exclusive frontend
+window, **not** production WFM acceptance: discriminator, stereo, RDS and
+audio were bypassed, and the measured load already exceeds the 70% target.
+The test ended with live mode off, radio stopped and rate override cleared.
 
 At **3.20 MS/s**, a lab-only `RTL_DSP LAB RATE 3200000` command started FM
 at the requested physical rate after `RTL_STOP`; readback confirmed
@@ -654,3 +683,65 @@ and the rate override cleared (`RTL_DSP LAB RATE DEFAULT`).
 
 Local transcripts are `artifacts/dsp-stage2/live-d2-internal-*.txt` and
 `artifacts/dsp-stage2/live-d2-320-*.txt` (untracked).
+
+### Targeted /8 experiment (D3; 2026-09-27)
+
+One lab-only topology change was tested: sparse Q15 HB1/HB2, a new sparse
+23-tap symmetric Q15 HB3 (/2), then an exact rational channel filter at
+300/320/360/400 kS/s. HB3's 100–200 kHz transition at 600 kS/s was designed
+for this anti-aliasing job, not copied from HB2. It stores half-scale Q6
+samples and restores the gain after the final polyphase: the script proves
+HB3's accumulator bound **1,132,211,348 < 2³¹** and stored-stage bound
+**17,277 < 32,768**. HB3 Q15 ripple/rejection were **0.0056/63.3 dB**.
+
+| Physical rate | /8 rational | Prototype / taps per phase | Q15 ripple / stop | Final accumulator bound |
+|---|---|---:|---:|---:|
+| 2.40 MS/s | 300k × 4/5 | 88 / 22 | 0.0911 / 60.4 dB | 1,017,407,976 |
+| 2.56 MS/s | 320k × 3/4 | 72 / 24 | 0.0767 / 62.0 dB | 1,025,148,072 |
+| 2.88 MS/s | 360k × 2/3 | 54 / 27 | 0.0788 / 61.5 dB | 1,025,165,349 |
+| 3.20 MS/s | 400k × 3/5 | 90 / 30 | 0.0764 / 62.0 dB | 1,022,660,184 |
+
+Against the generated /4 plans, taps per phase fell **44→22, 47→24,
+54→27, and 59→30** respectively; these are measured generated values,
+not the earlier rough estimates.
+
+The existing design script generated and checked these Q15 responses. On
+the Tab5, `RTL_DSP LAB COUNT 1 12` produced exactly 240,000 outputs per
+one second of input at all four rates. `RTL_DSP LAB STREAMSOAK 1 12` compared
+fixed and irregular calls over **7,322 blocks** with zero mismatches; the
+aggregate 2.40 count differed from floor(expected) by one phase-carry sample,
+the other three by zero. The targeted 3.20 `TEST 12 3` compared D3 with the
+existing float reference: reported in-band tone-gain differences were at
+most 0.011 dB, and adjacent-channel leakage was −66.5 dB for both.
+Sample-by-sample SNR in that test is **not** a valid cross-topology metric
+because HB3 adds fractional group delay. The existing `SWEEP 3 12` measured
+−0.0381 to +0.0470 dB passband gain through ±100 kHz and a worst sampled
+stopband point of −62.22 dB at |f| ≥ 140 kHz. Against `SWEEP 3 0` using the
+existing float reference, the largest gain difference among 41 passband
+frequencies was **0.0183 dB**; the float sweep's worst sampled stopband point
+was −61.05 dB. This is a frequency-response comparison, not bit identity.
+
+At 3.20 MS/s, the targeted offline `BENCH 128 12 3` averaged **2.972 ms**
+per 16,384-sample block, versus **3.063 ms** for D2 in the same build.
+The polyphase saved about **0.706 ms/block** (478.8 → 272.1 cycles/output),
+but HB3 added about **0.613 ms/block** (13.47 cycles/input), leaving only
+**0.091 ms/block net**. HB1 and HB2 still cost 17.15 and 14.22 cycles/input.
+The final polyphase remains the largest single offline stage at about
+**0.929 ms/block**; HB1/HB2/HB3 cost about 0.780/0.647/0.613 ms/block.
+
+The decisive exclusive live run used `RTL_DSP LAB LIVE D3 INTERNAL` and
+`RTL_DSP LAB RATE 3200000`; physical rate readback matched. In the final
+8,192-block ring, frontend avg/p95/p99/max was **3.763/6.807/7.447/9.424
+ms** and total DSP was **4.822/8.928/9.652/11.217 ms**. The 65.4-second
+counter window processed **3,072,641 samples/s**, with 90% DSP load, queue
+high-water 2, 3,023 processed blocks seeing backlog, and 628 overload
+yields. OrcSDR pipeline drops rose **33 → 459 (+426)** and USB driver
+overruns/drops reached **9/9**. No watchdog reset was observed. Those USB
+drops are observed for this run, not attributed uniquely to D3.
+
+**Decision: /8 fails the targeted 3.20 live gate.** The additional /2 cost
+almost cancels the polyphase saving and provides no material headroom over
+D2's 4.945 ms total average; pipeline loss persists. Per the experiment
+stop rule, no 2.40 live follow-up, D4+, or production audio integration was
+attempted. Live mode was disabled, radio stopped, and the rate override
+cleared. The benchmark lab remains behind `ORCSDR_DSP_LAB`.

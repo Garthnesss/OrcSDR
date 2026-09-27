@@ -16,9 +16,12 @@ namespace co = orcsdr::dsp::coeffs;
 
 constexpr int kHb1Taps = static_cast<int>(sizeof(co::kHb1Q15) / sizeof(co::kHb1Q15[0]));
 constexpr int kHb2Taps = static_cast<int>(sizeof(co::kHb2Q15) / sizeof(co::kHb2Q15[0]));
+constexpr int kHb3Taps = static_cast<int>(sizeof(co::kHb3Q15) / sizeof(co::kHb3Q15[0]));
 constexpr int kH1 = kHb1Taps - 1;
 constexpr int kH2 = kHb2Taps - 1;
-static_assert(kHb1Taps % 4 == 3 && kHb2Taps % 4 == 3, "halfband length must be 4k+3");
+constexpr int kHb3Hist = kHb3Taps - 1;
+static_assert(kHb1Taps % 4 == 3 && kHb2Taps % 4 == 3 && kHb3Taps % 4 == 3,
+              "halfband length must be 4k+3");
 static_assert(kH1 <= 8, "hb1 history buffer");
 
 // Runtime copies: the compiler must not see the values (a constant-folded
@@ -178,6 +181,30 @@ size_t hb2_run(T* comb, size_t n, uint8_t& phase, Kern kern) {
   return out;
 }
 
+inline void hb3_sparse(const Cs16* p, Cs16& y) {
+  constexpr int c = kHb3Taps / 2;
+  int32_t ai = 1 << 15, aq = 1 << 15;
+  ai += co::kHb3Q15[c] * static_cast<int32_t>(p[-c].i);
+  aq += co::kHb3Q15[c] * static_cast<int32_t>(p[-c].q);
+  for (int j = 1; j <= c; j += 2) {
+    const int32_t h = co::kHb3Q15[c + j];
+    ai += h * (static_cast<int32_t>(p[-c - j].i) + p[-c + j].i);
+    aq += h * (static_cast<int32_t>(p[-c - j].q) + p[-c + j].q);
+  }
+  // Half-scale Q6: the any-input bound would exceed int16 at Q7.
+  y.i = static_cast<int16_t>(ai >> 16);
+  y.q = static_cast<int16_t>(aq >> 16);
+}
+
+size_t hb3_run(Cs16* comb, size_t n, uint8_t& phase, Cs16* out) {
+  size_t o = 0;
+  size_t b = phase;
+  for (; b < n; b += 2) hb3_sparse(comb + kHb3Hist + b, out[o++]);
+  phase = static_cast<uint8_t>(b - n);
+  memmove(comb, comb + n, sizeof(Cs16) * kHb3Hist);
+  return o;
+}
+
 // ---- P4 PIE dot products (candidates E1/E2) ---------------------------------
 // Coefficient vectors live in q1..qN (loaded by the caller); data streams
 // through q0 with the fused multiply-accumulate + load. xacc is preloaded with
@@ -309,6 +336,30 @@ size_t d2_poly(const Cs16* comb, uint32_t& i, uint16_t& phase, uint32_t end, Cf3
   return o;
 }
 
+template <const int16_t* Proto, int L, int M, int P>
+size_t d3_poly(const Cs16* comb, uint32_t& i, uint16_t& phase, uint32_t end, Cf32* out) {
+  size_t o = 0;
+  while (i < end) {
+    const Cs16* xw = comb + (i - (P - 1));
+    switch (phase) {
+      case 0: out[o] = d2_dot<Proto, L, P, 0>(xw); break;
+      case 1: out[o] = d2_dot<Proto, L, P, 1>(xw); break;
+      default:
+        if constexpr (L >= 3) {
+          if (phase == 2) out[o] = d2_dot<Proto, L, P, 2>(xw);
+          else if constexpr (L == 4) out[o] = d2_dot<Proto, L, P, 3>(xw);
+        }
+    }
+    out[o].i *= 2.0f;  // HB3 stored at half-scale.
+    out[o].q *= 2.0f;
+    ++o;
+    const uint16_t next = phase + M;
+    i += next / L;
+    phase = next % L;
+  }
+  return o;
+}
+
 }  // namespace
 
 const char* candidate_name(Candidate c) {
@@ -319,6 +370,7 @@ const char* candidate_name(Candidate c) {
     case Candidate::c_espdsp_arp4: return "C_espdsp_arp4";
     case Candidate::d_q15_sparse: return "D_q15_sparse";
     case Candidate::d2_q15_specialized: return "D2_q15_specialized";
+    case Candidate::d3_q15_div8: return "D3_q15_div8";
     case Candidate::e_pie_pp: return "E1_pie_pp";
     case Candidate::e_pie_all: return "E2_pie_all";
     default: return "?";
@@ -349,7 +401,7 @@ void Frontend::release() {
   for (int k = 0; k < nblocks_; ++k) heap_caps_free(blocks_[k]);
   nblocks_ = 0;
   mem_ = {};
-  hb2_buf_ = pp_buf_ = c_fir_ = nullptr;
+  hb2_buf_ = hb3_buf_ = pp_buf_ = c_fir_ = nullptr;
   c_i0_ = c_q0_ = c_i1_ = c_q1_ = c_i2_ = c_q2_ = nullptr;
   c_hb1_coeffs_ = c_hb2_coeffs_ = nullptr;
   pp_f_ = nullptr;
@@ -386,12 +438,17 @@ bool Frontend::init_impl(uint32_t device_rate, Candidate cand, PpKind pp, size_t
   release();
   load_coeffs();
   const co::PpPlan* plan = nullptr;
-  for (const auto& p : co::kPlans)
-    if (p.device_rate == device_rate) plan = &p;
+  if (cand == Candidate::d3_q15_div8) {
+    for (const auto& p : co::kDiv8Plans)
+      if (p.device_rate == device_rate) plan = &p;
+  } else {
+    for (const auto& p : co::kPlans)
+      if (p.device_rate == device_rate) plan = &p;
+  }
   if (plan == nullptr || chunk_in == 0 || (chunk_in & 3) != 0) return false;
   if (cand == Candidate::a_float) pp = PpKind::f32;  // A is float end to end
   if (cand == Candidate::e_pie_pp || cand == Candidate::e_pie_all ||
-      cand == Candidate::d2_q15_specialized)
+      cand == Candidate::d2_q15_specialized || cand == Candidate::d3_q15_div8)
     pp = PpKind::q15;  // D2/E are Q15 end to end
   device_rate_ = device_rate;
   cand_ = cand;
@@ -406,6 +463,10 @@ bool Frontend::init_impl(uint32_t device_rate, Candidate cand, PpKind pp, size_t
   const bool float_stage = cand == Candidate::a_float;
   const size_t n1 = chunk_in / 2, n2 = chunk_in / 4;
   hb2_buf_ = alloc((kH2 + n1) * (float_stage ? sizeof(Cf32) : sizeof(Cs16)));
+  if (cand == Candidate::d3_q15_div8) {
+    hb3_buf_ = alloc((kHb3Hist + n2) * sizeof(Cs16));
+    if (!hb3_buf_) return false;
+  }
   const bool pp_float = pp_ == PpKind::f32;
   if (cand == Candidate::e_pie_pp || cand == Candidate::e_pie_all) {
     P8_ = static_cast<uint16_t>((P_ + 7) & ~7);
@@ -431,14 +492,15 @@ bool Frontend::init_impl(uint32_t device_rate, Candidate cand, PpKind pp, size_t
       for (int k = 0; k < kHb2Taps; ++k) e_hb2c_[k] = co::kHb2Q15[kHb2Taps - 1 - k];
     }
   } else {
-    pp_buf_ = alloc((P_ - 1 + n2) * (pp_float ? sizeof(Cf32) : sizeof(Cs16)));
+    pp_buf_ = alloc((P_ - 1 + (cand == Candidate::d3_q15_div8 ? (n2 + 1) / 2 : n2)) *
+                    (pp_float ? sizeof(Cf32) : sizeof(Cs16)));
     if (hb2_buf_ == nullptr || pp_buf_ == nullptr) return false;
   }
 
   // Per-phase reversed coefficient tables: y = sum_j hp[p][j] x[i-P+1+j],
   // hp[p][j] = h[p + (P-1-j) L].
-  if (cand == Candidate::d2_q15_specialized) {
-    // D2 reads the same generated Q15 coefficients directly from flash.
+  if (cand == Candidate::d2_q15_specialized || cand == Candidate::d3_q15_div8) {
+    // D2/D3 read generated Q15 coefficients directly from flash.
   } else if (pp_float) {
     pp_f_ = static_cast<float*>(alloc(sizeof(float) * L_ * P_));
     if (pp_f_ == nullptr) return false;
@@ -446,14 +508,14 @@ bool Frontend::init_impl(uint32_t device_rate, Candidate cand, PpKind pp, size_t
     pp_q_ = static_cast<int16_t*>(alloc(sizeof(int16_t) * L_ * P_));
     if (pp_q_ == nullptr) return false;
   }
-  if (cand != Candidate::d2_q15_specialized)
+  if (cand != Candidate::d2_q15_specialized && cand != Candidate::d3_q15_div8)
     for (int p = 0; p < L_; ++p)
       for (int j = 0; j < P_; ++j) {
         const int k = p + (P_ - 1 - j) * L_;
         if (pp_float) pp_f_[p * P_ + j] = plan->proto_f[k];
         else pp_q_[p * P_ + j] = plan->proto_q15[k];
       }
-  if (cand != Candidate::d2_q15_specialized) {
+  if (cand != Candidate::d2_q15_specialized && cand != Candidate::d3_q15_div8) {
     pp_adv_ = static_cast<uint16_t*>(alloc(sizeof(uint16_t) * 2 * L_));
     if (pp_adv_ == nullptr) return false;
     for (int p = 0; p < L_; ++p) {
@@ -515,9 +577,11 @@ void Frontend::reset() {
   memset(hb1_hist_f_, 0, sizeof(hb1_hist_f_));
   hb1_phase_ = 0;
   hb2_phase_ = 0;
+  hb3_phase_ = 0;
   c_pending_n_ = 0;
   const bool float_stage = cand_ == Candidate::a_float;
   if (hb2_buf_) memset(hb2_buf_, 0, kH2 * (float_stage ? sizeof(Cf32) : sizeof(Cs16)));
+  if (hb3_buf_) memset(hb3_buf_, 0, kHb3Hist * sizeof(Cs16));
   if (pp_buf_)
     memset(pp_buf_, 0, (P_ - 1) * (pp_ == PpKind::f32 ? sizeof(Cf32) : sizeof(Cs16)));
   if (e_i_) memset(e_i_, 0, sizeof(int16_t) * (P_ - 1));
@@ -540,9 +604,10 @@ void Frontend::reset() {
 }
 
 size_t Frontend::max_out(size_t n) const {
-  // Outputs per input = L / (4 M), plus one for phase carry per chunk.
+  // Outputs per input = L / (4 M), or L / (8 M) for D3, plus phase carry.
   const size_t chunks = (n + chunk_in_ - 1) / chunk_in_ + 1;
-  return (n / 4 + chunks * 2) * L_ / M_ + chunks + 2;
+  const size_t coarse = cand_ == Candidate::d3_q15_div8 ? 8 : 4;
+  return (n / coarse + chunks * 2) * L_ / M_ + chunks + 2;
 }
 
 size_t Frontend::process(const uint8_t* cu8, size_t n, Cf32* out, size_t out_cap,
@@ -656,10 +721,11 @@ size_t Frontend::chunk(const uint8_t* cu8, size_t n, Cf32* out, StageCycles* cyc
     if (cyc) { cyc->hb1 += t1 - t0; cyc->hb2 += t2 - t1; }
     t0 = t2;
   } else if (cand_ == Candidate::b_q15_full || cand_ == Candidate::d_q15_sparse ||
-             cand_ == Candidate::d2_q15_specialized) {
+             cand_ == Candidate::d2_q15_specialized || cand_ == Candidate::d3_q15_div8) {
     auto* comb2 = static_cast<Cs16*>(hb2_buf_);
     const bool sparse = cand_ != Candidate::b_q15_full;
-    const bool specialized = cand_ == Candidate::d2_q15_specialized;
+    const bool specialized = cand_ == Candidate::d2_q15_specialized ||
+                             cand_ == Candidate::d3_q15_div8;
     const size_t n1 =
         specialized ? hb1_run(x, n, hb1_hist_, hb1_phase_, comb2 + kH2,
                               [](const Cu8* p, Cs16& y) { hb1_specialized(p, y); })
@@ -679,10 +745,12 @@ size_t Frontend::chunk(const uint8_t* cu8, size_t n, Cf32* out, StageCycles* cyc
                   : hb2_run(comb2, n1, hb2_phase_, [&](const Cs16* p, size_t o) {
                       int32_t ai, aq; hb2_full(p, ai, aq); store(o, ai, aq); });
     } else {
-      auto* pp_in = static_cast<Cs16*>(pp_buf_) + H3;
-      const auto store = [pp_in](size_t o, int32_t ai, int32_t aq) {
-        pp_in[o].i = static_cast<int16_t>(ai >> 15);
-        pp_in[o].q = static_cast<int16_t>(aq >> 15);
+      const bool div8 = cand_ == Candidate::d3_q15_div8;
+      auto* hb2_out = div8 ? static_cast<Cs16*>(hb3_buf_) + kHb3Hist
+                           : static_cast<Cs16*>(pp_buf_) + H3;
+      const auto store = [hb2_out](size_t o, int32_t ai, int32_t aq) {
+        hb2_out[o].i = static_cast<int16_t>(ai >> 15);
+        hb2_out[o].q = static_cast<int16_t>(aq >> 15);
       };
       n2 = specialized ? hb2_run(comb2, n1, hb2_phase_, [&](const Cs16* p, size_t o) {
                             int32_t ai, aq; hb2_specialized(p, ai, aq); store(o, ai, aq); })
@@ -694,6 +762,13 @@ size_t Frontend::chunk(const uint8_t* cu8, size_t n, Cf32* out, StageCycles* cyc
     uint32_t t2 = cycles();
     if (cyc) { cyc->hb1 += t1 - t0; cyc->hb2 += t2 - t1; }
     t0 = t2;
+    if (cand_ == Candidate::d3_q15_div8) {
+      n2 = hb3_run(static_cast<Cs16*>(hb3_buf_), n2, hb3_phase_,
+                   static_cast<Cs16*>(pp_buf_) + H3);
+      const uint32_t t3 = cycles();
+      if (cyc) cyc->hb3 += t3 - t2;
+      t0 = t3;
+    }
   } else {  // ESP-DSP
     for (size_t k = 0; k < n; ++k) {
       c_i0_[k] = static_cast<int16_t>(static_cast<int32_t>(x[k].i) - 128);
@@ -805,6 +880,13 @@ size_t Frontend::chunk(const uint8_t* cu8, size_t n, Cf32* out, StageCycles* cyc
         case 2560000u: o = d2_poly<co::kPp256Q15, 3, 8, 47>(comb, i, p, end, out); break;
         case 2880000u: o = d2_poly<co::kPp288Q15, 1, 3, 54>(comb, i, p, end, out); break;
         case 3200000u: o = d2_poly<co::kPp320Q15, 3, 10, 59>(comb, i, p, end, out); break;
+      }
+    } else if (cand_ == Candidate::d3_q15_div8) {
+      switch (device_rate_) {
+        case 2400000u: o = d3_poly<co::kPpDiv8240Q15, 4, 5, 22>(comb, i, p, end, out); break;
+        case 2560000u: o = d3_poly<co::kPpDiv8256Q15, 3, 4, 24>(comb, i, p, end, out); break;
+        case 2880000u: o = d3_poly<co::kPpDiv8288Q15, 2, 3, 27>(comb, i, p, end, out); break;
+        case 3200000u: o = d3_poly<co::kPpDiv8320Q15, 3, 5, 30>(comb, i, p, end, out); break;
       }
     } else while (i < end) {
       const Cs16* xw = comb + (i - H3);

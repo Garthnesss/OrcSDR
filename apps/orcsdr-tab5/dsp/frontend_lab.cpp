@@ -45,6 +45,7 @@ constexpr Cfg kCfgs[] = {
     {Candidate::d_q15_sparse, PpKind::q15},  {Candidate::d2_q15_specialized, PpKind::q15},
     {Candidate::e_pie_pp, PpKind::q15},
     {Candidate::e_pie_all, PpKind::q15},
+    {Candidate::d3_q15_div8, PpKind::q15},
 };
 constexpr int kNumCfgs = sizeof(kCfgs) / sizeof(kCfgs[0]);
 
@@ -271,6 +272,7 @@ void bench_one(uint32_t rate, const Cfg& cfg, size_t chunk, bool internal, const
     tot[r] = cycles() - t0;
     sum.hb1 += c.hb1;
     sum.hb2 += c.hb2;
+    sum.hb3 += c.hb3;
     sum.pp += c.pp;
     sum.other += c.other;
     if ((r & 15) == 15) breathe();
@@ -288,18 +290,19 @@ void bench_one(uint32_t rate, const Cfg& cfg, size_t chunk, bool internal, const
   const MemUse m = fe.mem();
   emitf("LAB_BENCH rate=%lu cand=%s pp=%s chunk=%u mem=%s runs=%d interval_us=%.0f avg_us=%.1f "
         "p95_us=%.1f p99_us=%.1f max_us=%.1f load_pct=%.1f cyc_in=%.2f cyc_out=%.1f "
-        "hb1_cyc_in=%.2f hb2_cyc_in=%.2f pp_cyc_out=%.1f other_cyc_in=%.2f outs_per_block=%.1f "
+        "hb1_cyc_in=%.2f hb2_cyc_in=%.2f hb3_cyc_in=%.2f pp_cyc_out=%.1f other_cyc_in=%.2f outs_per_block=%.1f "
         "mem_int=%u mem_psram=%u arp4=%d",
         (unsigned long)rate, candidate_name(cfg.c), pp_name(cfg.p), (unsigned)chunk,
         internal ? "int" : "psram", runs, interval_us, avg_us, p95 / kCpuHz * 1e6,
         p99 / kCpuHz * 1e6, mx / kCpuHz * 1e6, 100.0 * avg_us / interval_us,
         all / in_samples, all / static_cast<double>(outs), sum.hb1 / in_samples,
-        sum.hb2 / in_samples, sum.pp / static_cast<double>(outs), sum.other / in_samples,
+        sum.hb2 / in_samples, sum.hb3 / in_samples, sum.pp / static_cast<double>(outs),
+        sum.other / in_samples,
         static_cast<double>(outs) / runs, (unsigned)m.internal, (unsigned)m.psram,
         fe.arp4_active() ? 1 : 0);
 }
 
-void job_bench(int runs) {
+void job_bench(int runs, int cfg_filter, int rate_filter) {
   constexpr int kNb = 4;
   auto* blocks = static_cast<uint8_t*>(palloc(kNb * kBlock * 2));
   const size_t cap = 2048;  // >= outputs of one 16K block at any plan
@@ -309,17 +312,22 @@ void job_bench(int runs) {
     emitf("LAB_BENCH_ERROR alloc");
   } else {
     Signal s{"bench", {{50e3, 40.0f}, {700e3, 30.0f}, {-230e3, 20.0f}}, 3, 20.0f, false, false, -1, -1};
-    for (uint32_t rate : kRates) {
+    for (int ri = 0; ri < 4; ++ri) {
+      if (rate_filter >= 0 && ri != rate_filter) continue;
+      const uint32_t rate = kRates[ri];
       generate(s, rate, blocks, kNb * kBlock, 7u);
-      for (const Cfg& cfg : kCfgs) {
-        bench_one(rate, cfg, 2048, true, blocks, kNb, runs, out, cap, tot);
+      for (int ci = 0; ci < kNumCfgs; ++ci) {
+        if (cfg_filter >= 0 && ci != cfg_filter) continue;
+        bench_one(rate, kCfgs[ci], 2048, true, blocks, kNb, runs, out, cap, tot);
         breathe();
       }
       // Buffer placement / chunking comparison on the main candidates.
-      bench_one(rate, {Candidate::d_q15_sparse, PpKind::q15}, 16384, false, blocks, kNb, runs, out,
-                cap, tot);
-      bench_one(rate, {Candidate::d_q15_sparse, PpKind::f32}, 16384, false, blocks, kNb, runs, out,
-                cap, tot);
+      if (cfg_filter < 0) {
+        bench_one(rate, {Candidate::d_q15_sparse, PpKind::q15}, 16384, false, blocks, kNb, runs, out,
+                  cap, tot);
+        bench_one(rate, {Candidate::d_q15_sparse, PpKind::f32}, 16384, false, blocks, kNb, runs, out,
+                  cap, tot);
+      }
       breathe();
     }
   }
@@ -385,7 +393,7 @@ size_t run(uint32_t rate, const Cfg& cfg, const uint8_t* in, size_t n, Cf32* out
   return got;
 }
 
-void job_test() {
+void job_test(int cfg_filter, int rate_filter) {
   const size_t n = 4 * kBlock;
   Buffers b = alloc_buffers(n);
   if (!b.ok()) {
@@ -395,7 +403,9 @@ void job_test() {
     return;
   }
   constexpr size_t kSkip = 64;
-  for (uint32_t rate : kRates) {
+  for (int ri = 0; ri < 4; ++ri) {
+    if (rate_filter >= 0 && ri != rate_filter) continue;
+    const uint32_t rate = kRates[ri];
     int ns = 0;
     const Signal* sigs = test_signals(rate, &ns);
     for (int si = 0; si < ns; ++si) {
@@ -413,6 +423,7 @@ void job_test() {
         ref_leak = peak_amp(b.ref, kSkip, 4096, b.work, f, true);
       }
       for (int ci = 1; ci < kNumCfgs; ++ci) {
+        if (cfg_filter >= 0 && ci != cfg_filter) continue;
         int32_t peak = 0;
         const size_t ny =
             run(rate, kCfgs[ci], b.in, n, b.y, b.cap, 2048,
@@ -425,8 +436,9 @@ void job_test() {
                 candidate_name(kCfgs[ci].c));
           continue;
         }
-        const size_t end = std::min(nr, ny) - 4;
-        for (int lag = -2; lag <= 2; ++lag) {
+        const int lag_limit = kCfgs[ci].c == Candidate::d3_q15_div8 ? 16 : 2;
+        const size_t end = std::min(nr, ny) - lag_limit;
+        for (int lag = -lag_limit; lag <= lag_limit; ++lag) {
           double e = 0, sp = 0;
           for (size_t k = kSkip; k < end; ++k) {
             const Cf32& r = b.ref[k];
@@ -470,11 +482,11 @@ void job_test() {
               s.main_tone >= 0 ? db(ref_amp / s.tones[s.main_tone].amp) : 0.0,
               s.interferer >= 0 ? db(leak / s.tones[s.interferer].amp) : 0.0,
               s.interferer >= 0 ? db(ref_leak / s.tones[s.interferer].amp) : 0.0,
-              (long)peak, (long)kStageBound);
-        if (peak > kStageBound)
+              (long)peak, (long)(kCfgs[ci].c == Candidate::d3_q15_div8 ? 17277 : kStageBound));
+        if (peak > (kCfgs[ci].c == Candidate::d3_q15_div8 ? 17277 : kStageBound))
           emitf("LAB_TEST_BOUND_FAIL rate=%lu sig=%s cand=%s peak=%ld bound=%ld",
                 (unsigned long)rate, s.name, candidate_name(kCfgs[ci].c),
-                (long)peak, (long)kStageBound);
+                (long)peak, (long)(kCfgs[ci].c == Candidate::d3_q15_div8 ? 17277 : kStageBound));
         breathe();
       }
     }
@@ -913,12 +925,15 @@ void job_soak(int minutes, int cfg_index, int period_us) {
 // once and never reset. Both see one continuous deterministic CU8 stream, but
 // one receives full blocks and the other receives irregular, often odd pieces.
 void job_stream_soak(int minutes, int cfg_index, int period_us) {
-  if (cfg_index != 8 && cfg_index != 9) {
-    emitf("LAB_STREAMSOAK_ERROR use_cfg_8_D_or_9_D2");
+  if (cfg_index != 8 && cfg_index != 9 && cfg_index != 12) {
+    emitf("LAB_STREAMSOAK_ERROR use_cfg_8_D_9_D2_or_12_D3");
     emitf("LAB_STREAMSOAK_DONE pass=0");
     return;
   }
-  const Candidate split_cand = cfg_index == 9 ? Candidate::d2_q15_specialized
+  const Candidate split_cand = cfg_index == 12 ? Candidate::d3_q15_div8
+                               : cfg_index == 9 ? Candidate::d2_q15_specialized
+                                                : Candidate::d_q15_sparse;
+  const Candidate fixed_cand = cfg_index == 12 ? Candidate::d3_q15_div8
                                                 : Candidate::d_q15_sparse;
   constexpr size_t n = kBlock;
   Buffers b = alloc_buffers(n);
@@ -930,7 +945,7 @@ void job_stream_soak(int minutes, int cfg_index, int period_us) {
   for (int r = 0; r < 4; ++r) {
     samples[r].s = 0xC0FFEEu + static_cast<uint32_t>(r);
     pieces[r].s = 0x1234567u + static_cast<uint32_t>(r);
-    if (ok) ok = fixed[r].init(kRates[r], Candidate::d_q15_sparse, PpKind::q15, n, false) &&
+    if (ok) ok = fixed[r].init(kRates[r], fixed_cand, PpKind::q15, n, false) &&
                  split[r].init(kRates[r], split_cand, PpKind::q15, n, false);
   }
   if (!ok) emitf("LAB_STREAMSOAK_ERROR setup");
@@ -1169,8 +1184,8 @@ int g_job_c = 0;
 
 void lab_task(void*) {
   const Job j = g_job;
-  if (!strcmp(j.kind, "BENCH")) job_bench(j.a > 0 ? j.a : 256);
-  else if (!strcmp(j.kind, "TEST")) job_test();
+  if (!strcmp(j.kind, "BENCH")) job_bench(j.a > 0 ? j.a : 256, j.b, g_job_c);
+  else if (!strcmp(j.kind, "TEST")) job_test(j.a, j.b);
   else if (!strcmp(j.kind, "SWEEP")) job_sweep(j.a, j.b);
   else if (!strcmp(j.kind, "CONT")) job_cont();
   else if (!strcmp(j.kind, "COUNT")) job_count(std::clamp(j.a, 1, 10), j.b);
@@ -1256,9 +1271,9 @@ void command(const char* args, bool radio_running, Emit emit) {
   char kind[12] = {}, x[24] = {}, y[24] = {}, z[24] = {};
   const int fields = sscanf(args, "%11s %23s %23s %23s", kind, x, y, z);
   if (fields < 1) {
-    emitf("LAB_USAGE BENCH [runs] | TEST | SWEEP <0-3|-1> <cfg|-1> | CONT | COUNT <seconds> <cfg|-1> | PREEMPT [s] [period_us] | "
-          "SHADOW <cand> <f32|q15> [INTERNAL|PSRAM] | LIVE <D|D2> [INTERNAL|PSRAM] | LIVE OFF | LIVE STATS | SHADOW OFF | SHADOW STATS | SHADOW RESET | CFGS | ARP4 | "
-           "SOAK <minutes> <cfg> [preempt_period_us] | STREAMSOAK <minutes> <8_D|9_D2> [preempt_period_us]");
+    emitf("LAB_USAGE BENCH [runs] [cfg|-1] [rate_index|-1] | TEST [cfg|-1] [rate_index|-1] | SWEEP <0-3|-1> <cfg|-1> | CONT | COUNT <seconds> <cfg|-1> | PREEMPT [s] [period_us] | "
+          "SHADOW <cand> <f32|q15> [INTERNAL|PSRAM] | LIVE <D|D2|D3> [INTERNAL|PSRAM] | LIVE OFF | LIVE STATS | SHADOW OFF | SHADOW STATS | SHADOW RESET | CFGS | ARP4 | "
+           "SOAK <minutes> <cfg> [preempt_period_us] | STREAMSOAK <minutes> <8_D|9_D2|12_D3> [preempt_period_us]");
     return;
   }
   if (!strcmp(kind, "CFGS")) {
@@ -1302,20 +1317,21 @@ void command(const char* args, bool radio_running, Emit emit) {
       emitf("LAB_LIVE off");
     } else if (!strcmp(x, "STATS")) {
       shadow_stats();
-    } else if (!strcasecmp(x, "D") || !strcasecmp(x, "D2")) {
+    } else if (!strcasecmp(x, "D") || !strcasecmp(x, "D2") || !strcasecmp(x, "D3")) {
       if (*y && strcasecmp(y, "INTERNAL") && strcasecmp(y, "PSRAM")) {
         emitf("LAB_LIVE_ERROR output_must_be_INTERNAL_or_PSRAM");
         return;
       }
       g_ring_n.store(0);
       g_shadow_internal_want.store(strcasecmp(y, "PSRAM") != 0);
-      const bool d2 = !strcasecmp(x, "D2");
-      g_shadow_want.store(d2 ? 9 : 8);
+      const int cfg = !strcasecmp(x, "D3") ? 12 : !strcasecmp(x, "D2") ? 9 : 8;
+      g_shadow_want.store(cfg);
       g_live_want.store(true);
       emitf("LAB_LIVE on cfg=%s/q15 output=%s (FM only; frontend output discarded)",
-            d2 ? "D2" : "D", strcasecmp(y, "PSRAM") ? "internal" : "psram");
+            cfg == 12 ? "D3" : cfg == 9 ? "D2" : "D",
+            strcasecmp(y, "PSRAM") ? "internal" : "psram");
     } else {
-      emitf("LAB_LIVE_ERROR use_D_or_D2_or_OFF_or_STATS");
+      emitf("LAB_LIVE_ERROR use_D_D2_D3_OFF_or_STATS");
     }
     return;
   }
@@ -1330,7 +1346,8 @@ void command(const char* args, bool radio_running, Emit emit) {
   strlcpy(g_job.kind, kind, sizeof(g_job.kind));
   g_job.a = fields >= 2 ? atoi(x) : 0;
   g_job.b = fields >= 3 ? atoi(y) : -1;
-  g_job_c = fields >= 4 ? atoi(z) : 0;
+  g_job_c = fields >= 4 ? atoi(z) : -1;
+  if (!strcmp(kind, "TEST") && fields < 2) g_job.a = -1;
   if (!strcmp(kind, "SWEEP")) {
     if (fields < 2) g_job.a = -1;
   }
