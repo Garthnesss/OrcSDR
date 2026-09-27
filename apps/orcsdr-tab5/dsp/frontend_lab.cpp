@@ -112,6 +112,8 @@ struct Signal {
   bool dither;      // TPDF +-1 LSB
   int main_tone;    // index of the tone used for amplitude/phase, -1 none
   int interferer;   // index of an out-of-band tone to measure leakage, -1 none
+  bool dc_full = false;
+  bool alternating_extremes = false;
 };
 
 // Exact frequency the DDS produces for f at fs.
@@ -134,6 +136,12 @@ void generate(const Signal& s, uint32_t fs, uint8_t* out, size_t n, uint32_t see
   uint32_t inc[3] = {};
   for (int t = 0; t < s.ntones; ++t) inc[t] = dds_inc(s.tones[t].f, fs);
   for (size_t k = 0; k < n; ++k) {
+    if (s.dc_full || s.alternating_extremes) {
+      const uint8_t hi = !s.alternating_extremes || (k & 1u) == 0 ? 255 : 0;
+      out[2 * k] = hi;
+      out[2 * k + 1] = static_cast<uint8_t>(255 - hi);
+      continue;
+    }
     float vi = 0.0f, vq = 0.0f;
     for (int t = 0; t < s.ntones; ++t) {
       vi += s.tones[t].amp * dds_cos(ph[t]);
@@ -323,7 +331,7 @@ void job_bench(int runs) {
 // ---- TEST (numerics vs the float oracle) ----------------------------------
 
 const Signal* test_signals(uint32_t fs, int* count) {
-  static Signal s[9];
+  static Signal s[11];
   const double fold = fs / 2.0 - 60e3;  // HB1 fold zone: lands at -60k after /2
   s[0] = {"impulse", {}, 0, 0.0f, true, false, -1, -1};
   s[1] = {"cw_37k", {{37.5e3, 90.0f}}, 1, 0.0f, false, false, 0, -1};
@@ -334,7 +342,9 @@ const Signal* test_signals(uint32_t fs, int* count) {
   s[6] = {"fullscale_60k", {{60e3, 127.0f}}, 1, 0.0f, false, false, 0, -1};
   s[7] = {"noise", {}, 0, 40.0f, false, false, -1, -1};
   s[8] = {"clip_40k", {{40e3, 180.0f}}, 1, 0.0f, false, false, 0, -1};
-  *count = 9;
+  s[9] = {"dc_full", {}, 0, 0.0f, false, false, -1, -1, true, false};
+  s[10] = {"alternating_extremes", {}, 0, 0.0f, false, false, -1, -1, false, true};
+  *count = 11;
   return s;
 }
 
@@ -460,6 +470,10 @@ void job_test() {
               s.interferer >= 0 ? db(leak / s.tones[s.interferer].amp) : 0.0,
               s.interferer >= 0 ? db(ref_leak / s.tones[s.interferer].amp) : 0.0,
               (long)peak, (long)kStageBound);
+        if (peak > kStageBound)
+          emitf("LAB_TEST_BOUND_FAIL rate=%lu sig=%s cand=%s peak=%ld bound=%ld",
+                (unsigned long)rate, s.name, candidate_name(kCfgs[ci].c),
+                (long)peak, (long)kStageBound);
         breathe();
       }
     }
