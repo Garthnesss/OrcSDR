@@ -16338,7 +16338,9 @@ void process_command(char* command) {
     Serial.printf("RTL_TOOL_STATUS tool=%s\n", orc_tool_name(orc_tool_current()));
     return;
   }
-  if (strcmp(command, "RTL_STOP") == 0 && (authenticated || ORC_LORA_TEST_BUILD)) {
+  // The benchmark lab must be able to stop auto-started radio capture over serial.
+  if (strcmp(command, "RTL_STOP") == 0 &&
+      (authenticated || ORC_LORA_TEST_BUILD || ORCSDR_DSP_LAB)) {
     if (!rtl_should_resume_after_disconnect(
             rtl_capture_state.load(std::memory_order_acquire))) {
       rtl_stop_requested.store(false, std::memory_order_release);
