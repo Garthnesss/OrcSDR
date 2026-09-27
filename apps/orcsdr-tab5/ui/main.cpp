@@ -2392,7 +2392,9 @@ bool audio_rec_stop_and_export();
 void audio_rec_append(const int16_t* samples, size_t count);
 void queue_audio_samples(int16_t* audio, size_t audio_count);
 void audio_rec_status_print();
+#if ORCSDR_DSP_AB
 void rds_process_mpx_sample(float phase, float pilot_y0 = 0.0f);
+#endif
 void rds_process_mpx_block(const float* mpx, const float* pilot, size_t n);
 // One IQ block of 240 kS/s MPX for RDS (2.4 MS/s gives ~1640 per block).
 constexpr size_t kRdsMpxBlockMax = 2048;
@@ -2406,6 +2408,14 @@ EXT_RAM_BSS_ATTR float rds_mpx_block[kRdsMpxBlockMax];
 #endif
 #ifndef ORCSDR_DSP_STAGE_TIMING
 #define ORCSDR_DSP_STAGE_TIMING 1
+#endif
+#ifndef ORCSDR_DSP_LAB
+#define ORCSDR_DSP_LAB 0  // Stage-2 frontend benchmark lab (test builds only)
+#endif
+#if ORCSDR_DSP_LAB
+}  // namespace
+#include "frontend_lab.hpp"
+namespace {
 #endif
 #if ORCSDR_DSP_AB
 EXT_RAM_BSS_ATTR float rds_pilot_block[kRdsMpxBlockMax];
@@ -6171,10 +6181,12 @@ void update_clipping_from_count(uint32_t clipped, size_t bytes) {
                                 std::memory_order_relaxed);
 }
 
+#if ORCSDR_DSP_AB  // one-pass level for the A/B harness (the DSP task splits it)
 void update_signal_level_from_iq(const uint8_t* iq, size_t bytes) {
   if (update_signal_power_from_iq(iq, bytes))
     update_clipping_from_count(count_clipped_pairs(iq, bytes), bytes);
 }
+#endif
 
 void draw_global_header_controls() {
   orcsdr::audio_header::draw(rtl_header_audio_control, rtl_ui_volume,
@@ -7570,9 +7582,11 @@ void rds_process_mpx_block(const float* mpx, const float* pilot, size_t n) {
   rtl_audio.rds_slicer_decim = slicer_decim;
 }
 
+#if ORCSDR_DSP_AB  // per-sample feed, kept for the A/B harness and replay A/B
 void rds_process_mpx_sample(float phase, float pilot_y0) {
   rds_process_mpx_block(&phase, &pilot_y0, 1);
 }
+#endif
 
 void rds_publish_state() {
   if (rtl_audio.rds_carrier_present) {
@@ -8849,6 +8863,11 @@ static void rtl_dsp_task(void *) {
       }
     }
     mark(dsp_stats::Stage::demod);
+#if ORCSDR_DSP_LAB
+    // Shadow mode: a candidate frontend on this live block, output discarded.
+    orcsdr::dsp::lab::shadow_block(block.data, block.bytes, block.sample_rate_sps);
+    mark(dsp_stats::Stage::other);
+#endif
     if (level_ok)
       update_clipping_from_count(rtl_block_clip.counted
                                      ? rtl_block_clip.pairs
@@ -8856,6 +8875,9 @@ static void rtl_dsp_task(void *) {
                                  block.bytes);
     mark(dsp_stats::Stage::level);
     const uint32_t dsp_elapsed_us = micros() - dsp_started_us;
+#if ORCSDR_DSP_LAB
+    orcsdr::dsp::lab::shadow_total(dsp_elapsed_us);
+#endif
     rtl_dsp_window_us.fetch_add(dsp_elapsed_us, std::memory_order_relaxed);
     rtl_dsp_window_blocks.fetch_add(1, std::memory_order_relaxed);
     uint32_t previous_max = rtl_dsp_block_us_max.load(std::memory_order_relaxed);
@@ -16444,6 +16466,16 @@ void process_command(char* command) {
                   orcsdr::freq_keypad::self_check() ? 1 : 0, editor ? 1 : 0);
     return;
   }
+#if ORCSDR_DSP_LAB
+  if (strncmp(command, "RTL_DSP LAB", 11) == 0) {
+    const RtlCaptureState state = rtl_capture_state.load(std::memory_order_acquire);
+    orcsdr::dsp::lab::command(
+        command[11] == ' ' ? command + 12 : "",
+        state == RtlCaptureState::queued || state == RtlCaptureState::running,
+        [](const char* line) { Serial.println(line); });
+    return;
+  }
+#endif
 #if ORCSDR_DSP_AB
   if (strncmp(command, "RTL_DSP AB CAPTURE ", 19) == 0) {
     const long blocks = strtol(command + 19, nullptr, 10);

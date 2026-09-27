@@ -18,8 +18,16 @@ if(C6_FIRMWARE_BIN)
     list(APPEND ORCSDR_LDFRAGMENTS "linker.lf")
 endif()
 
+# Stage-2 frontend benchmark lab (test builds only; see dsp/frontend_lab.hpp).
+set(ORCSDR_DSP_LAB 0 CACHE STRING "1 = Stage-2 multirate frontend benchmark lab (test builds only)")
+set(ORCSDR_LAB_SRCS)
+if(ORCSDR_DSP_LAB)
+    list(APPEND ORCSDR_LAB_SRCS "../dsp/multirate.cpp" "../dsp/frontend_lab.cpp")
+endif()
+
 idf_component_register(
     SRCS
+        ${ORCSDR_LAB_SRCS}
         "../ui/main.cpp"
         "../ui/orcsdr_splash.cpp"
         "../ui/orcsdr_storage.cpp"
@@ -116,13 +124,14 @@ idf_component_register(
 )
 
 target_compile_features(${COMPONENT_LIB} PRIVATE cxx_std_17)
-# DSP build switches (tools/build-tab5-idf.ps1 always passes both, so a value
+# DSP build switches (tools/build-tab5-idf.ps1 always passes all of them, so a value
 # cached by an earlier build can never leak into this one).
 set(ORCSDR_DSP_AB 0 CACHE STRING "1 = Stage-1 old-vs-new DSP A/B harness (test builds only)")
 set(ORCSDR_DSP_STAGE_TIMING 1 CACHE STRING "1 = per-stage DSP timing in RTL_DSP STATS")
 target_compile_definitions(${COMPONENT_LIB} PRIVATE
     ORCSDR_HAS_EMBEDDED_C6_FIRMWARE=$<BOOL:${C6_FIRMWARE_BIN}>
     ORCSDR_DSP_AB=$<BOOL:${ORCSDR_DSP_AB}>
-    ORCSDR_DSP_STAGE_TIMING=$<BOOL:${ORCSDR_DSP_STAGE_TIMING}>)
+    ORCSDR_DSP_STAGE_TIMING=$<BOOL:${ORCSDR_DSP_STAGE_TIMING}>
+    ORCSDR_DSP_LAB=$<BOOL:${ORCSDR_DSP_LAB}>)
 target_compile_options(${COMPONENT_LIB} PRIVATE
     "$<$<COMPILE_LANGUAGE:CXX>:-include;orcsdr_m5_time.hpp>")
