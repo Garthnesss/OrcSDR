@@ -524,7 +524,9 @@ void job_cont() {
     emitf("LAB_CONT_DONE");
     return;
   }
-  static constexpr size_t kPieces[] = {4, 1000, 2048, 12, 16384, 36, 7000, 4, 3072, 20};
+  static constexpr size_t kPieces[] = {1, 2, 3, 4, 7, 8, 15, 16, 31, 32,
+                                       63, 64, 127, 128, 255, 256, 2048,
+                                       16384, 7001, 3072};
   for (uint32_t rate : kRates) {
     Signal s{"cont", {{41e3, 60.0f}, {-333e3, 40.0f}}, 2, 15.0f, false, false, -1, -1};
     generate(s, rate, b.in, n, 4242u);
@@ -537,7 +539,8 @@ void job_cont() {
         size_t pos = 0;
         int k = 0;
         while (pos < n) {
-          const size_t take = std::min(kPieces[k++ % 10], n - pos);
+          const size_t take = std::min(kPieces[k++ % (sizeof(kPieces) / sizeof(kPieces[0]))],
+                                       n - pos);
           n_pieces += fe.process(b.in + pos * 2, take, b.y + n_pieces, b.cap - n_pieces);
           pos += take;
         }
@@ -572,6 +575,46 @@ void job_cont() {
   emitf("LAB_CONT_DONE");
 }
 
+// Exact long-window output accounting, including a non-block-sized tail.
+void job_count(int seconds, int cfg_index) {
+  auto* in = static_cast<uint8_t*>(palloc(kBlock * 2));
+  auto* out = static_cast<Cf32*>(palloc(2048 * sizeof(Cf32)));
+  if (!in || !out) {
+    emitf("LAB_COUNT_ERROR alloc");
+  } else {
+    Signal s{"count", {{41e3, 60.0f}}, 1, 0.0f, false, false, -1, -1};
+    generate(s, kRates[0], in, kBlock, 771u);
+    for (uint32_t rate : kRates) {
+      for (int ci = 0; ci < kNumCfgs; ++ci) {
+        if (cfg_index >= 0 && ci != cfg_index) continue;
+        Frontend fe;
+        if (!fe.init(rate, kCfgs[ci].c, kCfgs[ci].p, 2048, true)) {
+          emitf("LAB_COUNT_INIT_FAIL rate=%lu cfg=%d", (unsigned long)rate, ci);
+          continue;
+        }
+        const uint64_t input_total = static_cast<uint64_t>(rate) * seconds;
+        uint64_t input_done = 0, output_total = 0;
+        while (input_done < input_total) {
+          const size_t take = static_cast<size_t>(std::min<uint64_t>(kBlock, input_total - input_done));
+          output_total += fe.process(in, take, out, 2048);
+          input_done += take;
+          if ((input_done & 0x3FFFFu) == 0) breathe();
+        }
+        const uint64_t expected = static_cast<uint64_t>(240000) * seconds;
+        emitf("LAB_COUNT rate=%lu cfg=%d cand=%s pp=%s input=%llu output=%llu expected=%llu drift=%lld",
+              (unsigned long)rate, ci, candidate_name(kCfgs[ci].c), pp_name(kCfgs[ci].p),
+              (unsigned long long)input_done, (unsigned long long)output_total,
+              (unsigned long long)expected,
+              (long long)(static_cast<int64_t>(output_total) - static_cast<int64_t>(expected)));
+        breathe();
+      }
+    }
+  }
+  heap_caps_free(in);
+  heap_caps_free(out);
+  emitf("LAB_COUNT_DONE");
+}
+
 // ---- PREEMPT (forced preemption, HWLOOP + FPU state) --------------------------
 
 struct Aggressor {
@@ -587,6 +630,7 @@ struct Aggressor {
   float fgolden = 0;
 };
 Aggressor* g_agg = nullptr;
+void agg_end(Aggressor* a);
 
 void agg_timer_cb(void*) {
   if (g_agg && g_agg->task) xTaskNotifyGive(g_agg->task);
@@ -627,41 +671,56 @@ Aggressor* agg_begin() {
   a->in = static_cast<int16_t*>(heap_caps_aligned_alloc(16, 256 * sizeof(int16_t), MALLOC_CAP_INTERNAL));
   a->out = static_cast<int16_t*>(heap_caps_aligned_alloc(16, 128 * sizeof(int16_t), MALLOC_CAP_INTERNAL));
   if (!a->coeffs || !a->in || !a->out) {
-    heap_caps_free(a->coeffs);
-    heap_caps_free(a->in);
-    heap_caps_free(a->out);
-    delete a;
+    agg_end(a);
     return nullptr;
   }
   for (int k = 0; k < 16; ++k) a->coeffs[k] = k == 0 ? 0 : co::kHb2Q15[k - 1];
   Rng rng;
   for (int k = 0; k < 256; ++k) a->in[k] = static_cast<int16_t>(rng.next() & 0x3FFF) - 8192;
-  dsps_fird_init_s16(&a->fir, a->coeffs, nullptr, 16, 2, 0, 0);
+  if (heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT) < 8192 ||
+      dsps_fird_init_s16(&a->fir, a->coeffs, nullptr, 16, 2, 0, 0) != ESP_OK) {
+    agg_end(a);
+    return nullptr;
+  }
   {
     int16_t rev[16] __attribute__((aligned(16)));
     for (int k = 0; k < 16; ++k) rev[k] = a->coeffs[15 - k];
     fir_s16_t ref{};
-    dsps_fird_init_s16(&ref, rev, nullptr, 16, 2, 0, 0);
+    if (dsps_fird_init_s16(&ref, rev, nullptr, 16, 2, 0, 0) != ESP_OK) {
+      agg_end(a);
+      return nullptr;
+    }
     dsps_fird_s16_ansi(&ref, a->in, a->out, 128);
     dsps_fird_s16_aexx_free(&ref);
   }
   a->golden = fnv(a->out, 128 * sizeof(int16_t));
   a->fgolden = agg_float_work(a->in);
-  g_agg = a;
-  xTaskCreatePinnedToCore(agg_task, "lab_agg", 4096, a, 8, &a->task, 1);
   esp_timer_create_args_t targs{};
   targs.callback = agg_timer_cb;
   targs.name = "lab_agg";
-  esp_timer_create(&targs, &a->timer);
+  if (esp_timer_create(&targs, &a->timer) != ESP_OK) {
+    agg_end(a);
+    return nullptr;
+  }
+  g_agg = a;
+  if (xTaskCreatePinnedToCore(agg_task, "lab_agg", 4096, a, 8, &a->task, 1) != pdPASS) {
+    agg_end(a);
+    return nullptr;
+  }
   return a;
 }
 
 void agg_end(Aggressor* a) {
   if (!a) return;
-  esp_timer_stop(a->timer);
+  if (a->timer) esp_timer_stop(a->timer);
   a->stop.store(true);
+  if (a->task) xTaskNotifyGive(a->task);
   for (int k = 0; k < 20 && a->task != nullptr; ++k) vTaskDelay(pdMS_TO_TICKS(20));
-  esp_timer_delete(a->timer);
+  if (a->task != nullptr) {
+    emitf("LAB_PREEMPT_ERROR aggressor_shutdown_timeout");
+    return;  // preserve a live task's storage rather than use it after free
+  }
+  if (a->timer) esp_timer_delete(a->timer);
   g_agg = nullptr;
   dsps_fird_s16_aexx_free(&a->fir);
   heap_caps_free(a->coeffs);
@@ -829,6 +888,7 @@ void log_espdsp(const Frontend& fe, const char* ctx) {
 struct FirRig {
   fir_s16_t fir{};
   bool init(const int16_t* c, int len, int decim, int shift) {
+    if (heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT) < 8192) return false;
     return dsps_fird_init_s16(&fir, const_cast<int16_t*>(c), nullptr, len, decim, 0, shift) == ESP_OK;
   }
   ~FirRig() { dsps_fird_s16_aexx_free(&fir); }
@@ -867,8 +927,11 @@ void job_arp4() {
                  {"reversed_psram_io", true, 0, true},     {"reversed_psram_calls_1_2_3", true, -1, true}};
     for (const Case& cs : cases) {
       FirRig ra, rb;
-      ra.init(c, kLen, 2, kShift);
-      rb.init(cs.reversed ? cr : c, kLen, 2, kShift);
+      if (!ra.init(c, kLen, 2, kShift) ||
+          !rb.init(cs.reversed ? cr : c, kLen, 2, kShift)) {
+        emitf("LAB_ARP4_INIT_FAIL case=%s", cs.name);
+        continue;
+      }
       dsps_fird_s16_ansi(&ra.fir, in, ya, kOut);
       int16_t* src = in;
       int16_t* dst = yb;
@@ -877,7 +940,12 @@ void job_arp4() {
       if (cs.psram) {
         pin = static_cast<int16_t*>(heap_caps_aligned_alloc(16, kIn * 2, MALLOC_CAP_SPIRAM));
         pout = static_cast<int16_t*>(heap_caps_aligned_alloc(16, kOut * 2, MALLOC_CAP_SPIRAM));
-        if (!pin || !pout) continue;
+        if (!pin || !pout) {
+          heap_caps_free(pin);
+          heap_caps_free(pout);
+          emitf("LAB_ARP4_ERROR psram_alloc case=%s", cs.name);
+          continue;
+        }
         memcpy(pin, in, kIn * 2);
         src = pin;
         dst = pout;
@@ -970,6 +1038,7 @@ void lab_task(void*) {
   else if (!strcmp(j.kind, "TEST")) job_test();
   else if (!strcmp(j.kind, "SWEEP")) job_sweep(j.a, j.b);
   else if (!strcmp(j.kind, "CONT")) job_cont();
+  else if (!strcmp(j.kind, "COUNT")) job_count(std::clamp(j.a, 1, 10), j.b);
   else if (!strcmp(j.kind, "ARP4")) job_arp4();
   else if (!strcmp(j.kind, "SOAK")) job_soak(j.a > 0 ? j.a : 5, j.b, g_job_c);
   else if (!strcmp(j.kind, "PREEMPT")) job_preempt(j.a > 0 ? j.a : 10, j.b > 0 ? j.b : 250);
@@ -1047,7 +1116,7 @@ void command(const char* args, bool radio_running, Emit emit) {
   char kind[12] = {}, x[24] = {}, y[24] = {}, z[24] = {};
   const int fields = sscanf(args, "%11s %23s %23s %23s", kind, x, y, z);
   if (fields < 1) {
-    emitf("LAB_USAGE BENCH [runs] | TEST | SWEEP <0-3|-1> <cfg|-1> | CONT | PREEMPT [s] [period_us] | "
+    emitf("LAB_USAGE BENCH [runs] | TEST | SWEEP <0-3|-1> <cfg|-1> | CONT | COUNT <seconds> <cfg|-1> | PREEMPT [s] [period_us] | "
           "SHADOW <cand> <f32|q15> | SHADOW OFF | SHADOW STATS | SHADOW RESET | CFGS | ARP4 | "
           "SOAK <minutes> <cfg> [preempt_period_us]");
     return;

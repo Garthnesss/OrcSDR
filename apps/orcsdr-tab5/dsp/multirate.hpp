@@ -71,8 +71,8 @@ class Frontend {
   void release();
   void reset();  // clear all filter state (discontinuity)
 
-  // Consumes n complex CU8 samples (n even for ESP-DSP candidates, a multiple
-  // of 4 keeps every candidate aligned). Returns the number of outputs.
+  // Consumes n complex CU8 samples. ESP-DSP buffers up to three samples so
+  // its two /2 filters see complete groups of four across call boundaries.
   size_t process(const uint8_t* cu8, size_t n, Cf32* out, size_t out_cap,
                  StageCycles* cycles = nullptr);
 
@@ -134,6 +134,8 @@ class Frontend {
   int16_t* c_hb1_coeffs_ = nullptr;
   int16_t* c_hb2_coeffs_ = nullptr;
   bool arp4_active_ = false;
+  Cu8 c_pending_[4]{};
+  uint8_t c_pending_n_ = 0;
 
   // Polyphase.
   uint16_t L_ = 1, M_ = 1, P_ = 0, taps_ = 0;

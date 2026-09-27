@@ -265,6 +265,7 @@ void Frontend::release() {
   e1i_ = e1q_ = e2i_ = e2q_ = e_hb1c_ = e_hb2c_ = nullptr;
   device_rate_ = 0;
   arp4_active_ = false;
+  c_pending_n_ = 0;
   state_ = InitState::uninitialized;
 }
 
@@ -388,6 +389,12 @@ bool Frontend::init_impl(uint32_t device_rate, Candidate cand, PpKind pp, size_t
       std::reverse(c_hb2_coeffs_, c_hb2_coeffs_ + len2);
     }
     auto* fir = static_cast<fir_s16_t*>(c_fir_);
+    // ESP-DSP 1.8.2's optimized init dereferences its own memalign results
+    // without checking them. Refuse a lab candidate under memory pressure.
+    constexpr uint32_t kFirHeadroom = 8192;
+    if (heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT) < kFirHeadroom ||
+        heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT) < 128)
+      return false;
     // HB1: acc = sum h*c (c unshifted) -> >>8 gives c*128: shift - 15 = -8.
     // HB2: stage in, stage out: >>15, shift 0.
     for (int k = 0; k < 2; ++k)
@@ -408,6 +415,7 @@ void Frontend::reset() {
   memset(hb1_hist_f_, 0, sizeof(hb1_hist_f_));
   hb1_phase_ = 0;
   hb2_phase_ = 0;
+  c_pending_n_ = 0;
   const bool float_stage = cand_ == Candidate::a_float;
   if (hb2_buf_) memset(hb2_buf_, 0, kH2 * (float_stage ? sizeof(Cf32) : sizeof(Cs16)));
   if (pp_buf_)
@@ -440,10 +448,35 @@ size_t Frontend::max_out(size_t n) const {
 size_t Frontend::process(const uint8_t* cu8, size_t n, Cf32* out, size_t out_cap,
                          StageCycles* cycles_out) {
   size_t produced = 0;
-  if (state_ != InitState::ready) return 0;
+  if (state_ != InitState::ready || (n && (!cu8 || !out))) return 0;
+  if (out_cap < max_out(n + c_pending_n_)) return 0;
+  if (cand_ == Candidate::c_espdsp_ansi || cand_ == Candidate::c_espdsp_arp4) {
+    if (c_pending_n_) {
+      const size_t take = std::min(n, static_cast<size_t>(4 - c_pending_n_));
+      memcpy(c_pending_ + c_pending_n_, cu8, take * sizeof(Cu8));
+      c_pending_n_ += static_cast<uint8_t>(take);
+      cu8 += take * sizeof(Cu8);
+      n -= take;
+      if (c_pending_n_ == 4) {
+        produced += chunk(reinterpret_cast<const uint8_t*>(c_pending_), 4,
+                          out + produced, cycles_out);
+        c_pending_n_ = 0;
+      }
+    }
+    while (n >= 4) {
+      const size_t take = std::min(n & ~size_t{3}, chunk_in_);
+      produced += chunk(cu8, take, out + produced, cycles_out);
+      cu8 += take * sizeof(Cu8);
+      n -= take;
+    }
+    if (n) {
+      memcpy(c_pending_, cu8, n * sizeof(Cu8));
+      c_pending_n_ = static_cast<uint8_t>(n);
+    }
+    return produced;
+  }
   while (n > 0) {
     const size_t take = std::min(n, chunk_in_);
-    if (produced + max_out(take) > out_cap) break;
     produced += chunk(cu8, take, out + produced, cycles_out);
     cu8 += take * 2;
     n -= take;

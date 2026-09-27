@@ -82,7 +82,7 @@ def smallest_halfband(fs: float) -> np.ndarray:
 
 def polyphase_proto(rate_in: int, L: int) -> np.ndarray:
     fs = rate_in * L
-    wp = 10 ** (RIPPLE_DB / 20) - 1
+    wp = 10 ** (RIPPLE_DB / 40) - 1
     ws = 10 ** (-ATTEN_DB / 20)
     for taps in range(15, 2000, 1):
         if taps % L:
@@ -94,7 +94,11 @@ def polyphase_proto(rate_in: int, L: int) -> np.ndarray:
             continue
         pb = response_db(h, fs, np.linspace(0, PASS_HZ, 400))
         sb = response_db(h, fs, np.linspace(STOP_HZ, fs / 2, 4000))
-        if pb.max() - pb.min() <= 2 * RIPPLE_DB and -sb.max() >= ATTEN_DB:
+        hq = q15(h * L) / (Q15 * L)
+        pbq = response_db(hq, fs, np.linspace(0, PASS_HZ, 400))
+        sbq = response_db(hq, fs, np.linspace(STOP_HZ, fs / 2, 4000))
+        if (pb.max() - pb.min() <= RIPPLE_DB and -sb.max() >= ATTEN_DB and \
+                pbq.max() - pbq.min() <= RIPPLE_DB and -sbq.max() >= ATTEN_DB):
             return h * L  # unity passband gain after zero-stuffing by L
     raise RuntimeError("no prototype met spec")
 
@@ -129,7 +133,9 @@ def main() -> None:
         nz = int(np.count_nonzero(np.abs(h) > 0))
         report.append(f"{name}: {len(h)} taps ({nz} nonzero, {(nz - 1) // 2} unique side taps) "
                       f"ripple {ripple:.4f} dB, fold rejection {rej:.1f} dB (float) / {jq:.1f} dB (Q15); "
-                      f"sum|h| {np.abs(h).sum():.4f}")
+                      f"sum|h| {np.abs(h).sum():.4f}; delay {(len(h) - 1) / (2 * fs) * 1e6:.2f} us")
+    hb1_bound = math.ceil(16384 * np.abs(q15(hb1)).sum() / Q15) + 1
+    hb2_bound = math.ceil(hb1_bound * np.abs(q15(hb2)).sum() / Q15) + 1
     protos = []
     for rate, mid, L, M in PLANS:
         h = polyphase_proto(mid, L)
@@ -138,12 +144,18 @@ def main() -> None:
         sb = response_db(h / L, fs, np.linspace(STOP_HZ, fs / 2, 4000))
         hq = q15(h) / Q15
         sbq = response_db(hq / L, fs, np.linspace(STOP_HZ, fs / 2, 4000))
+        pbq = response_db(hq / L, fs, np.linspace(0, PASS_HZ, 400))
+        phase_abs = max(sum(abs(int(v)) for v in q15(h)[p::L]) for p in range(L))
+        acc_bound = hb2_bound * phase_abs
+        assert acc_bound < 2**31
         per_phase = len(h) // L
         protos.append((rate, mid, L, M, h))
         report.append(f"PP {rate / 1e6:.2f}M: {mid // 1000}k x{L}/{M} proto {len(h)} taps "
                       f"({per_phase}/phase) ripple {pb.max() - pb.min():.4f} dB "
+                      f"(Q15 {pbq.max() - pbq.min():.4f} dB) "
                       f"stop {-sb.max():.1f} dB (float) / {-sbq.max():.1f} dB (Q15); "
-                      f"MAC per out {2 * per_phase}; max|h| {np.abs(h).max():.4f}")
+                      f"MAC per out {2 * per_phase}; delay {(len(h) - 1) / (2 * fs) * 1e6:.2f} us; "
+                      f"Q15 acc_bound {acc_bound}; max|h| {np.abs(h).max():.4f}")
     print("\n".join(report))
     if args.report:
         return
