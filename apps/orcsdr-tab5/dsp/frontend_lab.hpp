@@ -15,8 +15,9 @@ using Emit = void (*)(const char* line);
 // and print LAB_* lines; the call returns immediately.
 void command(const char* args, bool radio_running, Emit emit);
 
-// DSP task hooks (shadow mode). Cheap no-ops when shadow is off.
-void shadow_block(const uint8_t* cu8, size_t bytes, uint32_t sample_rate);
+// DSP task hooks. A successful exclusive live block replaces legacy demod only in lab builds.
+bool live_active();
+bool shadow_block(const uint8_t* cu8, size_t bytes, uint32_t sample_rate);
 void shadow_total(uint32_t block_us);
 
 }  // namespace orcsdr::dsp::lab

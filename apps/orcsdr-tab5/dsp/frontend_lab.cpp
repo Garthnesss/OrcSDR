@@ -42,7 +42,8 @@ constexpr Cfg kCfgs[] = {
     {Candidate::b_q15_full, PpKind::q15},    {Candidate::c_espdsp_ansi, PpKind::f32},
     {Candidate::c_espdsp_ansi, PpKind::q15}, {Candidate::c_espdsp_arp4, PpKind::f32},
     {Candidate::c_espdsp_arp4, PpKind::q15}, {Candidate::d_q15_sparse, PpKind::f32},
-    {Candidate::d_q15_sparse, PpKind::q15},  {Candidate::e_pie_pp, PpKind::q15},
+    {Candidate::d_q15_sparse, PpKind::q15},  {Candidate::d2_q15_specialized, PpKind::q15},
+    {Candidate::e_pie_pp, PpKind::q15},
     {Candidate::e_pie_all, PpKind::q15},
 };
 constexpr int kNumCfgs = sizeof(kCfgs) / sizeof(kCfgs[0]);
@@ -572,15 +573,16 @@ void job_cont() {
             (unsigned)n_one, (unsigned)n_pieces, same ? 1 : 0, (unsigned)first_diff);
       breathe();
     }
-    for (const Candidate ec : {Candidate::e_pie_pp, Candidate::e_pie_all}) {
-      // E must equal D + pp_q15 exactly (same integer sums, PIE vs scalar).
+    for (const Candidate ec : {Candidate::d2_q15_specialized, Candidate::e_pie_pp,
+                               Candidate::e_pie_all}) {
+      // D2/E must equal D + pp_q15 exactly (same Q15 integer sums).
       const size_t nd = run(rate, {Candidate::d_q15_sparse, PpKind::q15}, b.in, n, b.ref, b.cap);
       const size_t ne = run(rate, {ec, PpKind::q15}, b.in, n, b.y, b.cap);
       size_t first = std::min(nd, ne);
       for (size_t k = 0; k < std::min(nd, ne); ++k)
         if (memcmp(&b.ref[k], &b.y[k], sizeof(Cf32)) != 0) { first = k; break; }
       const bool same = nd == ne && nd > 0 && first == nd;
-      emitf("LAB_CONT_E_VS_D rate=%lu cand=%s outputs=%u/%u bit_identical=%d first_diff=%u",
+      emitf("LAB_CONT_VS_D rate=%lu cand=%s outputs=%u/%u bit_identical=%d first_diff=%u",
             (unsigned long)rate, candidate_name(ec), (unsigned)nd, (unsigned)ne, same ? 1 : 0,
             (unsigned)first);
     }
@@ -632,6 +634,7 @@ void job_count(int seconds, int cfg_index) {
 // ---- PREEMPT (forced preemption, HWLOOP + FPU state) --------------------------
 
 struct Aggressor {
+  bool fir_enabled = true;
   TaskHandle_t task = nullptr;
   esp_timer_handle_t timer = nullptr;
   std::atomic<bool> stop{false};
@@ -663,11 +666,14 @@ void agg_task(void* arg) {
   auto* a = static_cast<Aggressor*>(arg);
   while (!a->stop.load()) {
     if (ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(50)) == 0) continue;
-    memset(a->fir.delay, 0, sizeof(int16_t) * a->fir.coeffs_len);
-    a->fir.pos = 0;
-    a->fir.d_pos = 0;
-    dsps_fird_s16_arp4(&a->fir, a->in, a->out, 128);  // HWLOOP kernel
-    const uint32_t h = fnv(a->out, 128 * sizeof(int16_t));
+    uint32_t h = a->golden;
+    if (a->fir_enabled) {
+      memset(a->fir.delay, 0, sizeof(int16_t) * a->fir.coeffs_len);
+      a->fir.pos = 0;
+      a->fir.d_pos = 0;
+      dsps_fird_s16_arp4(&a->fir, a->in, a->out, 128);  // diagnostic HWLOOP kernel
+      h = fnv(a->out, 128 * sizeof(int16_t));
+    }
     const float f = agg_float_work(a->in);
     a->runs.fetch_add(1);
     if (h != a->golden || f != a->fgolden) a->bad.fetch_add(1);
@@ -676,39 +682,59 @@ void agg_task(void* arg) {
   vTaskDelete(nullptr);
 }
 
-// Starts the aggressor: a priority-8 task on core 1, woken by an esp_timer
-// every period_us, running an arp4 (PIE + HWLOOP) FIR and float work and
-// checking that its repeated runs stay identical to its first run.
-Aggressor* agg_begin() {
+// Priority-8 task on core 1, woken periodically. The continuous-state test
+// uses float-only pressure so its validity does not depend on rejected ARP4.
+Aggressor* agg_begin(bool use_arp4 = true) {
   auto* a = new Aggressor();
-  a->coeffs = static_cast<int16_t*>(heap_caps_aligned_alloc(16, 16 * sizeof(int16_t), MALLOC_CAP_INTERNAL));
+  a->fir_enabled = use_arp4;
+  if (use_arp4)
+    a->coeffs = static_cast<int16_t*>(heap_caps_aligned_alloc(16, 16 * sizeof(int16_t), MALLOC_CAP_INTERNAL));
   a->in = static_cast<int16_t*>(heap_caps_aligned_alloc(16, 256 * sizeof(int16_t), MALLOC_CAP_INTERNAL));
-  a->out = static_cast<int16_t*>(heap_caps_aligned_alloc(16, 128 * sizeof(int16_t), MALLOC_CAP_INTERNAL));
-  if (!a->coeffs || !a->in || !a->out) {
+  if (use_arp4)
+    a->out = static_cast<int16_t*>(heap_caps_aligned_alloc(16, 128 * sizeof(int16_t), MALLOC_CAP_INTERNAL));
+  if (!a->in || (use_arp4 && (!a->coeffs || !a->out))) {
     agg_end(a);
     return nullptr;
   }
-  for (int k = 0; k < 16; ++k) a->coeffs[k] = k == 0 ? 0 : co::kHb2Q15[k - 1];
   Rng rng;
   for (int k = 0; k < 256; ++k) a->in[k] = static_cast<int16_t>(rng.next() & 0x3FFF) - 8192;
-  if (heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT) < 8192 ||
-      dsps_fird_init_s16(&a->fir, a->coeffs, nullptr, 16, 2, 0, 0) != ESP_OK) {
-    agg_end(a);
-    return nullptr;
-  }
-  {
-    int16_t rev[16] __attribute__((aligned(16)));
-    for (int k = 0; k < 16; ++k) rev[k] = a->coeffs[15 - k];
-    fir_s16_t ref{};
-    if (dsps_fird_init_s16(&ref, rev, nullptr, 16, 2, 0, 0) != ESP_OK) {
+  a->fgolden = agg_float_work(a->in);
+  if (use_arp4) {
+    for (int k = 0; k < 16; ++k) a->coeffs[k] = k == 0 ? 0 : co::kHb2Q15[k - 1];
+    if (heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT) < 8192 ||
+        dsps_fird_init_s16(&a->fir, a->coeffs, nullptr, 16, 2, 0, 0) != ESP_OK) {
       agg_end(a);
       return nullptr;
     }
-    dsps_fird_s16_ansi(&ref, a->in, a->out, 128);
-    dsps_fird_s16_aexx_free(&ref);
+    {
+      int16_t rev[16] __attribute__((aligned(16)));
+      for (int k = 0; k < 16; ++k) rev[k] = a->coeffs[15 - k];
+      fir_s16_t ref{};
+      if (dsps_fird_init_s16(&ref, rev, nullptr, 16, 2, 0, 0) != ESP_OK) {
+        agg_end(a);
+        return nullptr;
+      }
+      dsps_fird_s16_ansi(&ref, a->in, a->out, 128);
+      dsps_fird_s16_aexx_free(&ref);
+    }
+    a->golden = fnv(a->out, 128 * sizeof(int16_t));
+    // A preemption result is meaningful only if this exact ARP4 rig works alone.
+    memset(a->fir.delay, 0, sizeof(int16_t) * a->fir.coeffs_len);
+    a->fir.pos = 0;
+    a->fir.d_pos = 0;
+    memset(a->out, 0, 128 * sizeof(int16_t));
+    dsps_fird_s16_arp4(&a->fir, a->in, a->out, 128);
+    const uint32_t baseline = fnv(a->out, 128 * sizeof(int16_t));
+    const bool baseline_match = baseline == a->golden;
+    emitf("LAB_AGG_BASELINE mode=arp4 match=%d expected=%08lx observed=%08lx",
+          baseline_match ? 1 : 0, (unsigned long)a->golden, (unsigned long)baseline);
+    if (!baseline_match) {
+      agg_end(a);
+      return nullptr;
+    }
+  } else {
+    emitf("LAB_AGG_BASELINE mode=float match=1");
   }
-  a->golden = fnv(a->out, 128 * sizeof(int16_t));
-  a->fgolden = agg_float_work(a->in);
   esp_timer_create_args_t targs{};
   targs.callback = agg_timer_cb;
   targs.name = "lab_agg";
@@ -736,7 +762,7 @@ void agg_end(Aggressor* a) {
   }
   if (a->timer) esp_timer_delete(a->timer);
   g_agg = nullptr;
-  dsps_fird_s16_aexx_free(&a->fir);
+  if (a->fir_enabled) dsps_fird_s16_aexx_free(&a->fir);
   heap_caps_free(a->coeffs);
   heap_caps_free(a->in);
   heap_caps_free(a->out);
@@ -748,13 +774,14 @@ void job_preempt(int seconds, int period_us) {
   Buffers b = alloc_buffers(n);
   Aggressor* a = b.ok() ? agg_begin() : nullptr;
   if (!a) {
-    emitf("LAB_PREEMPT_ERROR alloc");
+    emitf("LAB_PREEMPT_ERROR aggressor_init_or_baseline");
   } else {
     Signal s{"preempt", {{41e3, 60.0f}, {-333e3, 40.0f}}, 2, 15.0f, false, false, -1, -1};
     const Cfg victims[] = {{Candidate::c_espdsp_arp4, PpKind::q15},
                            {Candidate::c_espdsp_ansi, PpKind::q15},
                            {Candidate::d_q15_sparse, PpKind::q15},
-                           {Candidate::d_q15_sparse, PpKind::f32},
+                            {Candidate::d_q15_sparse, PpKind::f32},
+                            {Candidate::d2_q15_specialized, PpKind::q15},
                            {Candidate::e_pie_pp, PpKind::q15},
                            {Candidate::e_pie_all, PpKind::q15},
                            {Candidate::a_float, PpKind::f32}};
@@ -814,6 +841,10 @@ void job_soak(int minutes, int cfg_index, int period_us) {
   }
   if (!ok) emitf("LAB_SOAK_ERROR setup");
   Aggressor* a = (ok && period_us > 0) ? agg_begin() : nullptr;
+  if (ok && period_us > 0 && !a) {
+    emitf("LAB_SOAK_ERROR aggressor_init_or_baseline");
+    ok = false;
+  }
   if (a) esp_timer_start_periodic(a->timer, period_us);
   Rng rng;
   rng.s = 0xC0FFEEu;
@@ -876,6 +907,96 @@ void job_soak(int minutes, int cfg_index, int period_us) {
   heap_caps_free(golden);
   free_buffers(b);
   emitf("LAB_SOAK_DONE");
+}
+
+// Persistent-state comparison: each rate has two frontends that are initialized
+// once and never reset. Both see one continuous deterministic CU8 stream, but
+// one receives full blocks and the other receives irregular, often odd pieces.
+void job_stream_soak(int minutes, int cfg_index, int period_us) {
+  if (cfg_index != 8 && cfg_index != 9) {
+    emitf("LAB_STREAMSOAK_ERROR use_cfg_8_D_or_9_D2");
+    emitf("LAB_STREAMSOAK_DONE pass=0");
+    return;
+  }
+  const Candidate split_cand = cfg_index == 9 ? Candidate::d2_q15_specialized
+                                                : Candidate::d_q15_sparse;
+  constexpr size_t n = kBlock;
+  Buffers b = alloc_buffers(n);
+  static Frontend fixed[4], split[4];
+  Rng samples[4], pieces[4];
+  uint64_t input_count[4] = {}, output_count[4] = {};
+  uint32_t blocks[4] = {};
+  bool ok = b.ok();
+  for (int r = 0; r < 4; ++r) {
+    samples[r].s = 0xC0FFEEu + static_cast<uint32_t>(r);
+    pieces[r].s = 0x1234567u + static_cast<uint32_t>(r);
+    if (ok) ok = fixed[r].init(kRates[r], Candidate::d_q15_sparse, PpKind::q15, n, false) &&
+                 split[r].init(kRates[r], split_cand, PpKind::q15, n, false);
+  }
+  if (!ok) emitf("LAB_STREAMSOAK_ERROR setup");
+  Aggressor* a = (ok && period_us > 0) ? agg_begin(false) : nullptr;
+  if (ok && period_us > 0 && (!a || esp_timer_start_periodic(a->timer, period_us) != ESP_OK)) {
+    emitf("LAB_STREAMSOAK_ERROR aggressor_init_or_baseline");
+    ok = false;
+  }
+  const int64_t start = esp_timer_get_time();
+  const int64_t finish = start + static_cast<int64_t>(minutes) * 60000000;
+  int64_t next_report = start + 60000000;
+  uint32_t iterations = 0, mismatches = 0, non4_pieces = 0;
+  while (ok && esp_timer_get_time() < finish) {
+    const int r = static_cast<int>(iterations % 4);
+    for (size_t k = 0; k < n * 2; ++k) b.in[k] = static_cast<uint8_t>(samples[r].next() >> 24);
+    const size_t want = fixed[r].process(b.in, n, b.ref, b.cap);
+    size_t pos = 0, got = 0;
+    while (pos < n) {
+      const size_t take = std::min<size_t>(1 + pieces[r].next() % 7001, n - pos);
+      non4_pieces += static_cast<uint32_t>((take & 3u) != 0);
+      got += split[r].process(b.in + 2 * pos, take, b.y + got, b.cap - got);
+      pos += take;
+    }
+    if (want == 0 || want != got ||
+        memcmp(b.ref, b.y, std::min(want, got) * sizeof(Cf32)) != 0) {
+      size_t first = 0;
+      while (first < std::min(want, got) &&
+             memcmp(&b.ref[first], &b.y[first], sizeof(Cf32)) == 0) ++first;
+      emitf("LAB_STREAMSOAK_MISMATCH rate=%lu block=%lu outputs=%u/%u first=%u",
+            (unsigned long)kRates[r], (unsigned long)blocks[r], (unsigned)want,
+            (unsigned)got, (unsigned)first);
+      ++mismatches;
+      break;
+    }
+    input_count[r] += n;
+    output_count[r] += want;
+    ++blocks[r];
+    ++iterations;
+    breathe();
+    if (esp_timer_get_time() >= next_report) {
+      next_report += 60000000;
+      emitf("LAB_STREAMSOAK_PROGRESS cand=%s minutes=%.1f blocks=%lu mismatches=%lu non4_pieces=%lu",
+            candidate_name(split_cand),
+            (esp_timer_get_time() - start) / 60e6, (unsigned long)iterations,
+            (unsigned long)mismatches, (unsigned long)non4_pieces);
+    }
+  }
+  if (a) esp_timer_stop(a->timer);
+  for (int r = 0; r < 4; ++r) {
+    emitf("LAB_STREAMSOAK rate=%lu blocks=%lu input=%llu output=%llu expected=%llu drift=%lld",
+          (unsigned long)kRates[r], (unsigned long)blocks[r],
+          (unsigned long long)input_count[r], (unsigned long long)output_count[r],
+          (unsigned long long)(input_count[r] * 240000 / kRates[r]),
+          (long long)(static_cast<int64_t>(output_count[r]) -
+                      static_cast<int64_t>(input_count[r] * 240000 / kRates[r])));
+    fixed[r].release();
+    split[r].release();
+  }
+  emitf("LAB_STREAMSOAK_DONE cand=%s minutes=%d blocks=%lu mismatches=%lu non4_pieces=%lu pass=%d "
+        "preempt_runs=%lu preempt_mismatches=%lu",
+        candidate_name(split_cand), minutes, (unsigned long)iterations,
+        (unsigned long)mismatches, (unsigned long)non4_pieces,
+        ok && iterations > 0 && mismatches == 0 && non4_pieces > 0 ? 1 : 0,
+        a ? (unsigned long)a->runs.load() : 0ul, a ? (unsigned long)a->bad.load() : 0ul);
+  agg_end(a);
+  free_buffers(b);
 }
 
 void log_espdsp(const Frontend& fe, const char* ctx) {
@@ -1055,6 +1176,7 @@ void lab_task(void*) {
   else if (!strcmp(j.kind, "COUNT")) job_count(std::clamp(j.a, 1, 10), j.b);
   else if (!strcmp(j.kind, "ARP4")) job_arp4();
   else if (!strcmp(j.kind, "SOAK")) job_soak(j.a > 0 ? j.a : 5, j.b, g_job_c);
+  else if (!strcmp(j.kind, "STREAMSOAK")) job_stream_soak(j.a > 0 ? j.a : 20, j.b, g_job_c);
   else if (!strcmp(j.kind, "PREEMPT")) job_preempt(j.a > 0 ? j.a : 10, j.b > 0 ? j.b : 250);
   g_busy.store(false);
   vTaskDelete(nullptr);
@@ -1064,10 +1186,13 @@ void lab_task(void*) {
 
 constexpr uint32_t kRing = 8192;
 std::atomic<int> g_shadow_want{-1};
+std::atomic<bool> g_live_want{false};
+std::atomic<bool> g_shadow_internal_want{false};
 int g_shadow_cfg = -1;
 uint32_t g_shadow_rate = 0;
 Frontend* g_shadow_fe = nullptr;
 Cf32* g_shadow_out = nullptr;
+bool g_shadow_internal = false;
 uint16_t* g_ring_fe = nullptr;
 uint16_t* g_ring_total = nullptr;
 std::atomic<uint32_t> g_ring_n{0};
@@ -1099,9 +1224,10 @@ void shadow_stats() {
     if (interval > 0 && t[k] > interval) ++over;
   }
   const uint32_t amax = *std::max_element(a, a + n), tmax = *std::max_element(t, t + n);
-  emitf("LAB_SHADOW_STATS cfg=%s/%s rate=%lu blocks=%lu interval_us=%.0f fe_avg_us=%.1f "
+  emitf("LAB_SHADOW_STATS mode=%s output=%s cfg=%s/%s rate=%lu blocks=%lu interval_us=%.0f fe_avg_us=%.1f "
         "fe_p95=%lu fe_p99=%lu fe_max=%lu total_avg_us=%.1f total_p95=%lu total_p99=%lu "
         "total_max=%lu blocks_over_interval=%lu",
+        g_live_want.load() ? "exclusive" : "shadow", g_shadow_internal ? "internal" : "psram",
         g_shadow_cfg >= 0 ? candidate_name(kCfgs[g_shadow_cfg].c) : "off",
         g_shadow_cfg >= 0 ? pp_name(kCfgs[g_shadow_cfg].p) : "-", (unsigned long)g_shadow_rate,
         (unsigned long)n, interval, static_cast<double>(sa) / n, (unsigned long)percentile(a, n, 95),
@@ -1131,8 +1257,8 @@ void command(const char* args, bool radio_running, Emit emit) {
   const int fields = sscanf(args, "%11s %23s %23s %23s", kind, x, y, z);
   if (fields < 1) {
     emitf("LAB_USAGE BENCH [runs] | TEST | SWEEP <0-3|-1> <cfg|-1> | CONT | COUNT <seconds> <cfg|-1> | PREEMPT [s] [period_us] | "
-          "SHADOW <cand> <f32|q15> | SHADOW OFF | SHADOW STATS | SHADOW RESET | CFGS | ARP4 | "
-          "SOAK <minutes> <cfg> [preempt_period_us]");
+          "SHADOW <cand> <f32|q15> [INTERNAL|PSRAM] | LIVE D [INTERNAL|PSRAM] | LIVE OFF | LIVE STATS | SHADOW OFF | SHADOW STATS | SHADOW RESET | CFGS | ARP4 | "
+           "SOAK <minutes> <cfg> [preempt_period_us] | STREAMSOAK <minutes> <8_D|9_D2> [preempt_period_us]");
     return;
   }
   if (!strcmp(kind, "CFGS")) {
@@ -1142,6 +1268,7 @@ void command(const char* args, bool radio_running, Emit emit) {
   }
   if (!strcmp(kind, "SHADOW")) {
     if (!strcmp(x, "OFF")) {
+      g_live_want.store(false);
       g_shadow_want.store(-1);
       emitf("LAB_SHADOW off");
     } else if (!strcmp(x, "STATS")) {
@@ -1155,10 +1282,39 @@ void command(const char* args, bool radio_running, Emit emit) {
         emitf("LAB_SHADOW_ERROR unknown_cfg (use e.g. D q15, C_espdsp_arp4 q15, A f32)");
         return;
       }
+      if (*z && strcasecmp(z, "INTERNAL") && strcasecmp(z, "PSRAM")) {
+        emitf("LAB_SHADOW_ERROR output_must_be_INTERNAL_or_PSRAM");
+        return;
+      }
       g_ring_n.store(0);
+      g_live_want.store(false);
+      g_shadow_internal_want.store(!strcasecmp(z, "INTERNAL"));
       g_shadow_want.store(cfg);
-      emitf("LAB_SHADOW on cfg=%s/%s (applied at the next block)", candidate_name(kCfgs[cfg].c),
-            pp_name(kCfgs[cfg].p));
+      emitf("LAB_SHADOW on cfg=%s/%s output=%s (applied at the next block)", candidate_name(kCfgs[cfg].c),
+            pp_name(kCfgs[cfg].p), !strcasecmp(z, "INTERNAL") ? "internal" : "psram");
+    }
+    return;
+  }
+  if (!strcmp(kind, "LIVE")) {
+    if (!strcmp(x, "OFF")) {
+      g_live_want.store(false);
+      g_shadow_want.store(-1);
+      emitf("LAB_LIVE off");
+    } else if (!strcmp(x, "STATS")) {
+      shadow_stats();
+    } else if (!strcasecmp(x, "D")) {
+      if (*y && strcasecmp(y, "INTERNAL") && strcasecmp(y, "PSRAM")) {
+        emitf("LAB_LIVE_ERROR output_must_be_INTERNAL_or_PSRAM");
+        return;
+      }
+      g_ring_n.store(0);
+      g_shadow_internal_want.store(strcasecmp(y, "PSRAM") != 0);
+      g_shadow_want.store(8);
+      g_live_want.store(true);
+      emitf("LAB_LIVE on cfg=D/q15 output=%s (FM only; frontend output discarded)",
+            strcasecmp(y, "PSRAM") ? "internal" : "psram");
+    } else {
+      emitf("LAB_LIVE_ERROR use_D_or_OFF_or_STATS");
     }
     return;
   }
@@ -1185,7 +1341,9 @@ void command(const char* args, bool radio_running, Emit emit) {
   emitf("LAB_STARTED %s", kind);
 }
 
-void shadow_block(const uint8_t* cu8, size_t bytes, uint32_t sample_rate) {
+bool live_active() { return g_live_want.load(std::memory_order_relaxed); }
+
+bool shadow_block(const uint8_t* cu8, size_t bytes, uint32_t sample_rate) {
   const int want = g_shadow_want.load(std::memory_order_relaxed);
   g_shadow_pending = false;
   if (want < 0) {
@@ -1194,16 +1352,29 @@ void shadow_block(const uint8_t* cu8, size_t bytes, uint32_t sample_rate) {
       g_shadow_fe = nullptr;
       g_shadow_cfg = -1;
     }
-    return;
+    return false;
   }
   if (!g_ring_fe) {
     g_ring_fe = static_cast<uint16_t*>(palloc(sizeof(uint16_t) * kRing));
     g_ring_total = static_cast<uint16_t*>(palloc(sizeof(uint16_t) * kRing));
-    g_shadow_out = static_cast<Cf32*>(palloc(sizeof(Cf32) * 2048));
-    if (!g_ring_fe || !g_ring_total || !g_shadow_out) {
+    if (!g_ring_fe || !g_ring_total) {
       g_shadow_want.store(-1);
-      return;
+      return false;
     }
+  }
+  const bool internal = g_shadow_internal_want.load(std::memory_order_relaxed);
+  if (!g_shadow_out || internal != g_shadow_internal) {
+    heap_caps_free(g_shadow_out);
+    g_shadow_out = static_cast<Cf32*>(heap_caps_malloc(sizeof(Cf32) * 2048,
+        internal ? MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT : MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT));
+    if (!g_shadow_out) {
+      g_shadow_want.store(-1);
+      g_live_want.store(false);
+      emitf("LAB_SHADOW_ERROR output_alloc");
+      return false;
+    }
+    g_shadow_internal = internal;
+    g_ring_n.store(0);
   }
   if (!g_shadow_fe) g_shadow_fe = new Frontend();
   if (want != g_shadow_cfg || sample_rate != g_shadow_rate) {
@@ -1212,14 +1383,16 @@ void shadow_block(const uint8_t* cu8, size_t bytes, uint32_t sample_rate) {
     if (!g_shadow_fe->init(sample_rate, kCfgs[want].c, kCfgs[want].p, 2048, true)) {
       g_shadow_cfg = -1;
       g_shadow_rate = 0;
-      return;  // not a benchmark rate (or no memory): skip silently
+      return false;  // not a benchmark rate (or no memory)
     }
     g_ring_n.store(0);
   }
   const uint32_t t0 = cycles();
-  g_shadow_fe->process(cu8, bytes / 2, g_shadow_out, 2048);
+  const size_t produced = g_shadow_fe->process(cu8, bytes / 2, g_shadow_out, 2048);
   g_shadow_cyc = cycles() - t0;
+  if (produced == 0) return false;
   g_shadow_pending = true;
+  return true;
 }
 
 void shadow_total(uint32_t block_us) {

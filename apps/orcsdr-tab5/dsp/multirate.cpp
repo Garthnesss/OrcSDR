@@ -76,6 +76,21 @@ inline void hb1_sparse(const Cu8* p, Cs16& y) {
   y.q = static_cast<int16_t>(aq >> 8);
 }
 
+inline void hb1_specialized(const Cu8* p, Cs16& y) {
+  constexpr int c = kHb1Taps / 2;
+  static_assert(co::kHb1Q15[0] * 2 + co::kHb1Q15[2] * 2 + co::kHb1Q15[3] == 32768);
+  int32_t ai = (128 - 128 * 32768) + co::kHb1Q15[c] * static_cast<int32_t>(p[-c].i);
+  int32_t aq = (128 - 128 * 32768) + co::kHb1Q15[c] * static_cast<int32_t>(p[-c].q);
+#pragma GCC unroll 2
+  for (int j = 1; j <= c; j += 2) {
+    const int32_t h = co::kHb1Q15[c + j];
+    ai += h * (static_cast<int32_t>(p[-c - j].i) + p[-c + j].i);
+    aq += h * (static_cast<int32_t>(p[-c - j].q) + p[-c + j].q);
+  }
+  y.i = static_cast<int16_t>(ai >> 8);
+  y.q = static_cast<int16_t>(aq >> 8);
+}
+
 // A: float, all taps.
 inline void hb1_float(const Cu8* p, Cf32& y) {
   float ai = 0.0f, aq = 0.0f;
@@ -125,6 +140,18 @@ inline void hb2_sparse(const Cs16* p, int32_t& ai, int32_t& aq) {
   aq = (1 << 14) + g_hb2_q[c] * static_cast<int32_t>(p[-c].q);
   for (int j = 1; j <= c; j += 2) {
     const int32_t h = g_hb2_q[c + j];
+    ai += h * (static_cast<int32_t>(p[-c - j].i) + p[-c + j].i);
+    aq += h * (static_cast<int32_t>(p[-c - j].q) + p[-c + j].q);
+  }
+}
+
+inline void hb2_specialized(const Cs16* p, int32_t& ai, int32_t& aq) {
+  constexpr int c = kHb2Taps / 2;
+  ai = (1 << 14) + co::kHb2Q15[c] * static_cast<int32_t>(p[-c].i);
+  aq = (1 << 14) + co::kHb2Q15[c] * static_cast<int32_t>(p[-c].q);
+#pragma GCC unroll 4
+  for (int j = 1; j <= c; j += 2) {
+    const int32_t h = co::kHb2Q15[c + j];
     ai += h * (static_cast<int32_t>(p[-c - j].i) + p[-c + j].i);
     aq += h * (static_cast<int32_t>(p[-c - j].q) + p[-c + j].q);
   }
@@ -216,6 +243,72 @@ struct PieUnaligned {  // enable unaligned 128-bit loads for a scope
 constexpr float kQ15ToC = 1.0f / 128.0f;           // stage value -> c units
 constexpr float kPpQ15ToC = 1.0f / (32768.0f * 128.0f);
 
+template <const int16_t* Proto, int L, int P, int Phase>
+inline Cf32 d2_dot(const Cs16* xw) {
+  int32_t ai0 = 0, aq0 = 0, ai1 = 0, aq1 = 0;
+  int j = 0;
+#pragma GCC unroll 4
+  for (; j + 1 < P; j += 2) {
+    const int32_t h0 = Proto[Phase + (P - 1 - j) * L];
+    const int32_t h1 = Proto[Phase + (P - 2 - j) * L];
+    ai0 += h0 * static_cast<int32_t>(xw[j].i);
+    aq0 += h0 * static_cast<int32_t>(xw[j].q);
+    ai1 += h1 * static_cast<int32_t>(xw[j + 1].i);
+    aq1 += h1 * static_cast<int32_t>(xw[j + 1].q);
+  }
+  if (j < P) {
+    const int32_t h = Proto[Phase];
+    ai0 += h * static_cast<int32_t>(xw[j].i);
+    aq0 += h * static_cast<int32_t>(xw[j].q);
+  }
+  return {static_cast<float>(ai0 + ai1) * kPpQ15ToC,
+          static_cast<float>(aq0 + aq1) * kPpQ15ToC};
+}
+
+template <const int16_t* Proto, int L, int M, int P>
+size_t d2_poly(const Cs16* comb, uint32_t& i, uint16_t& phase, uint32_t end, Cf32* out) {
+  size_t o = 0;
+  while (i < end) {
+    const Cs16* xw = comb + (i - (P - 1));
+    if constexpr (L == 1) {
+      out[o++] = d2_dot<Proto, L, P, 0>(xw);
+      i += 3;
+    } else if constexpr (L == 2) {
+      if (phase == 0) {
+        out[o++] = d2_dot<Proto, L, P, 0>(xw);
+        i += 2; phase = 1;
+      } else {
+        out[o++] = d2_dot<Proto, L, P, 1>(xw);
+        i += 3; phase = 0;
+      }
+    } else if constexpr (M == 8) {
+      if (phase == 0) {
+        out[o++] = d2_dot<Proto, L, P, 0>(xw);
+        i += 2; phase = 2;
+      } else if (phase == 2) {
+        out[o++] = d2_dot<Proto, L, P, 2>(xw);
+        i += 3; phase = 1;
+      } else {
+        out[o++] = d2_dot<Proto, L, P, 1>(xw);
+        i += 3; phase = 0;
+      }
+    } else {
+      static_assert(L == 3 && M == 10);
+      if (phase == 0) {
+        out[o++] = d2_dot<Proto, L, P, 0>(xw);
+        i += 3; phase = 1;
+      } else if (phase == 1) {
+        out[o++] = d2_dot<Proto, L, P, 1>(xw);
+        i += 3; phase = 2;
+      } else {
+        out[o++] = d2_dot<Proto, L, P, 2>(xw);
+        i += 4; phase = 0;
+      }
+    }
+  }
+  return o;
+}
+
 }  // namespace
 
 const char* candidate_name(Candidate c) {
@@ -225,6 +318,7 @@ const char* candidate_name(Candidate c) {
     case Candidate::c_espdsp_ansi: return "C_espdsp_ansi";
     case Candidate::c_espdsp_arp4: return "C_espdsp_arp4";
     case Candidate::d_q15_sparse: return "D_q15_sparse";
+    case Candidate::d2_q15_specialized: return "D2_q15_specialized";
     case Candidate::e_pie_pp: return "E1_pie_pp";
     case Candidate::e_pie_all: return "E2_pie_all";
     default: return "?";
@@ -296,8 +390,9 @@ bool Frontend::init_impl(uint32_t device_rate, Candidate cand, PpKind pp, size_t
     if (p.device_rate == device_rate) plan = &p;
   if (plan == nullptr || chunk_in == 0 || (chunk_in & 3) != 0) return false;
   if (cand == Candidate::a_float) pp = PpKind::f32;  // A is float end to end
-  if (cand == Candidate::e_pie_pp || cand == Candidate::e_pie_all)
-    pp = PpKind::q15;  // E is Q15 end to end
+  if (cand == Candidate::e_pie_pp || cand == Candidate::e_pie_all ||
+      cand == Candidate::d2_q15_specialized)
+    pp = PpKind::q15;  // D2/E are Q15 end to end
   device_rate_ = device_rate;
   cand_ = cand;
   pp_ = pp;
@@ -342,24 +437,29 @@ bool Frontend::init_impl(uint32_t device_rate, Candidate cand, PpKind pp, size_t
 
   // Per-phase reversed coefficient tables: y = sum_j hp[p][j] x[i-P+1+j],
   // hp[p][j] = h[p + (P-1-j) L].
-  if (pp_float) {
+  if (cand == Candidate::d2_q15_specialized) {
+    // D2 reads the same generated Q15 coefficients directly from flash.
+  } else if (pp_float) {
     pp_f_ = static_cast<float*>(alloc(sizeof(float) * L_ * P_));
     if (pp_f_ == nullptr) return false;
   } else {
     pp_q_ = static_cast<int16_t*>(alloc(sizeof(int16_t) * L_ * P_));
     if (pp_q_ == nullptr) return false;
   }
-  for (int p = 0; p < L_; ++p)
-    for (int j = 0; j < P_; ++j) {
-      const int k = p + (P_ - 1 - j) * L_;
-      if (pp_float) pp_f_[p * P_ + j] = plan->proto_f[k];
-      else pp_q_[p * P_ + j] = plan->proto_q15[k];
+  if (cand != Candidate::d2_q15_specialized)
+    for (int p = 0; p < L_; ++p)
+      for (int j = 0; j < P_; ++j) {
+        const int k = p + (P_ - 1 - j) * L_;
+        if (pp_float) pp_f_[p * P_ + j] = plan->proto_f[k];
+        else pp_q_[p * P_ + j] = plan->proto_q15[k];
+      }
+  if (cand != Candidate::d2_q15_specialized) {
+    pp_adv_ = static_cast<uint16_t*>(alloc(sizeof(uint16_t) * 2 * L_));
+    if (pp_adv_ == nullptr) return false;
+    for (int p = 0; p < L_; ++p) {
+      pp_adv_[2 * p] = static_cast<uint16_t>((p + M_) / L_);
+      pp_adv_[2 * p + 1] = static_cast<uint16_t>((p + M_) % L_);
     }
-  pp_adv_ = static_cast<uint16_t*>(alloc(sizeof(uint16_t) * 2 * L_));
-  if (pp_adv_ == nullptr) return false;
-  for (int p = 0; p < L_; ++p) {
-    pp_adv_[2 * p] = static_cast<uint16_t>((p + M_) / L_);
-    pp_adv_[2 * p + 1] = static_cast<uint16_t>((p + M_) % L_);
   }
 
   if (cand == Candidate::c_espdsp_ansi || cand == Candidate::c_espdsp_arp4) {
@@ -555,11 +655,15 @@ size_t Frontend::chunk(const uint8_t* cu8, size_t n, Cf32* out, StageCycles* cyc
     uint32_t t2 = cycles();
     if (cyc) { cyc->hb1 += t1 - t0; cyc->hb2 += t2 - t1; }
     t0 = t2;
-  } else if (cand_ == Candidate::b_q15_full || cand_ == Candidate::d_q15_sparse) {
+  } else if (cand_ == Candidate::b_q15_full || cand_ == Candidate::d_q15_sparse ||
+             cand_ == Candidate::d2_q15_specialized) {
     auto* comb2 = static_cast<Cs16*>(hb2_buf_);
-    const bool sparse = cand_ == Candidate::d_q15_sparse;
+    const bool sparse = cand_ != Candidate::b_q15_full;
+    const bool specialized = cand_ == Candidate::d2_q15_specialized;
     const size_t n1 =
-        sparse ? hb1_run(x, n, hb1_hist_, hb1_phase_, comb2 + kH2,
+        specialized ? hb1_run(x, n, hb1_hist_, hb1_phase_, comb2 + kH2,
+                              [](const Cu8* p, Cs16& y) { hb1_specialized(p, y); })
+        : sparse ? hb1_run(x, n, hb1_hist_, hb1_phase_, comb2 + kH2,
                          [](const Cu8* p, Cs16& y) { hb1_sparse(p, y); })
                : hb1_run(x, n, hb1_hist_, hb1_phase_, comb2 + kH2,
                          [](const Cu8* p, Cs16& y) { hb1_full(p, y); });
@@ -580,8 +684,10 @@ size_t Frontend::chunk(const uint8_t* cu8, size_t n, Cf32* out, StageCycles* cyc
         pp_in[o].i = static_cast<int16_t>(ai >> 15);
         pp_in[o].q = static_cast<int16_t>(aq >> 15);
       };
-      n2 = sparse ? hb2_run(comb2, n1, hb2_phase_, [&](const Cs16* p, size_t o) {
-                      int32_t ai, aq; hb2_sparse(p, ai, aq); store(o, ai, aq); })
+      n2 = specialized ? hb2_run(comb2, n1, hb2_phase_, [&](const Cs16* p, size_t o) {
+                            int32_t ai, aq; hb2_specialized(p, ai, aq); store(o, ai, aq); })
+           : sparse ? hb2_run(comb2, n1, hb2_phase_, [&](const Cs16* p, size_t o) {
+                       int32_t ai, aq; hb2_sparse(p, ai, aq); store(o, ai, aq); })
                   : hb2_run(comb2, n1, hb2_phase_, [&](const Cs16* p, size_t o) {
                       int32_t ai, aq; hb2_full(p, ai, aq); store(o, ai, aq); });
     }
@@ -693,7 +799,14 @@ size_t Frontend::chunk(const uint8_t* cu8, size_t n, Cf32* out, StageCycles* cyc
       }
       peak_q15_ = peak;
     }
-    while (i < end) {
+    if (cand_ == Candidate::d2_q15_specialized) {
+      switch (device_rate_) {
+        case 2400000u: o = d2_poly<co::kPp240Q15, 2, 5, 44>(comb, i, p, end, out); break;
+        case 2560000u: o = d2_poly<co::kPp256Q15, 3, 8, 47>(comb, i, p, end, out); break;
+        case 2880000u: o = d2_poly<co::kPp288Q15, 1, 3, 54>(comb, i, p, end, out); break;
+        case 3200000u: o = d2_poly<co::kPp320Q15, 3, 10, 59>(comb, i, p, end, out); break;
+      }
+    } else while (i < end) {
       const Cs16* xw = comb + (i - H3);
       const int16_t* h = pp_q_ + p * P_;
       int32_t ai0 = 0, aq0 = 0, ai1 = 0, aq1 = 0;

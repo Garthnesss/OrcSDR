@@ -8835,7 +8835,18 @@ static void rtl_dsp_task(void *) {
     if (!block.custom_rate && block.band == RtlBand::lora)
       lora_iq_offer(block.data, block.bytes);
     mark(dsp_stats::Stage::decoders);
-    if (!block.custom_rate && !orcsdr::visualizer::channel_audio_active() &&
+#if ORCSDR_DSP_LAB
+    const bool lab_exclusive = block.band == RtlBand::fm &&
+        orcsdr::dsp::lab::live_active() &&
+        orcsdr::dsp::lab::shadow_block(block.data, block.bytes, block.sample_rate_sps);
+    if (lab_exclusive) rtl_audio_play_count = 0;
+    mark(dsp_stats::Stage::other);
+#endif
+    if (
+#if ORCSDR_DSP_LAB
+        !lab_exclusive &&
+#endif
+        !block.custom_rate && !orcsdr::visualizer::channel_audio_active() &&
         block.band != RtlBand::lora && block.band != RtlBand::p25 &&
         block.band != RtlBand::pocsag &&
         (rtl_audio_enabled.load(std::memory_order_relaxed) ||
@@ -8864,8 +8875,9 @@ static void rtl_dsp_task(void *) {
     }
     mark(dsp_stats::Stage::demod);
 #if ORCSDR_DSP_LAB
-    // Shadow mode: a candidate frontend on this live block, output discarded.
-    orcsdr::dsp::lab::shadow_block(block.data, block.bytes, block.sample_rate_sps);
+    // Shadow mode adds the candidate after legacy demod; exclusive mode above replaces it.
+    if (!orcsdr::dsp::lab::live_active())
+      orcsdr::dsp::lab::shadow_block(block.data, block.bytes, block.sample_rate_sps);
     mark(dsp_stats::Stage::other);
 #endif
     if (level_ok)

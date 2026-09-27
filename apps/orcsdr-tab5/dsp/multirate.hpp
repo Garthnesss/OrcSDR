@@ -33,6 +33,7 @@ enum class Candidate : uint8_t {
   c_espdsp_ansi,  // C: ESP-DSP dsps_fird_s16_ansi (I and Q de-interleaved)
   c_espdsp_arp4,  // C: ESP-DSP dsps_fird_s16_arp4 (P4 SIMD + HWLOOP)
   d_q15_sparse,   // D: custom Q15, zero taps skipped, symmetric pairs folded
+  d2_q15_specialized,  // D2: same Q15 math, fixed coefficients/rate plans (lab only)
   e_pie_pp,       // E1: D halfbands + P4 PIE SIMD Q15 polyphase (unrolled, no
                   //     esp.lp.setup / HWLOOP); bit-identical to D + pp_q15
   e_pie_all,      // E2: PIE for both halfbands and the polyphase (dot products

@@ -3,8 +3,8 @@
 Status: **Stage 1 complete and hardware-verified** (optimization only; §12).
 Output is bit-identical to the pre-Stage-1 code on saved live IQ for FM, NFM,
 AM, CB AM and CB LSB/USB, and for RDS (live and SD replay). DSP state is now
-owned by the DSP task (§13). The Stage 2 benchmark lab has **not** started, and
-no multirate frontend is connected. Sections 0-10 are the original Phase 1-4
+owned by the DSP task (§13). Stage 2 bench findings are in §15; the multirate
+frontend is **not connected to production FM**. Sections 0-10 are the original Phase 1-4
 audit (investigation and baseline measurements, including the task-watchdog
 safety valve and instrumentation in §6). Branch `claude/dsp-multirate`, built on
 `claude/rc4-controls`.
@@ -478,7 +478,7 @@ Remaining races (documented, accepted):
   still in flight during `stopping` could overlap. This is a developer command,
   and the window was not widened by Stage 1.
 
-## 14. Stage 2 notes (benchmark lab first; no live integration before the gate)
+## 14. Stage 2 design notes (historical plan)
 
 - **Candidate B, exact ratios:** ÷2 ÷2 halfbands, then rational L/M to 240k:
   2.40 → 600k → **2/5**; 2.56 → 640k → **3/8**; 2.88 → 720k → **1/3**;
@@ -518,5 +518,100 @@ Remaining races (documented, accepted):
 | 2.88 MS/s | measure | measure | spec | measure | pass/fail |
 | 3.20 MS/s | measure | measure | spec | measure | pass/fail |
 
-Live multirate FM integration, ESP-IDF migration and any esp-rtl-sdr change
-are out of scope until the gate is reviewed and explicitly authorized.
+ESP-IDF migration and any esp-rtl-sdr change remain out of scope. The lab is
+compiled only with `ORCSDR_DSP_LAB=1`; the normal build excludes its sources
+and command hooks.
+
+## 15. Stage 2 measurement summary (2026-09-26)
+
+Candidate D is the sparse Q15 halfband cascade plus Q15 rational polyphase.
+All four fixed rate plans produce 240 kS/s MPX. The float implementation is
+the numeric reference; C ANSI is a useful cross-check, not the production
+choice. ARP4 is rejected: its full-chain continuity/numeric failures are
+independent of the soak. An ARP4 aggressor baseline matched once before
+preemption, but failed on another no-preemption run; therefore the older soak's
+2.67 million aggressor mismatches **do not establish** preemption as the cause.
+
+| Input MS/s | D output after 1 s | D numeric min SNR (11 vectors) | Max Q15 stage peak / bound | D offline avg / p95 / p99 / max, ms per 16,384 input |
+|---:|---:|---:|---:|---:|
+| 2.40 | 240,000 | 75.4 dB | 17,492 / 24,170 | 3.692 / 3.701 / 3.771 / 4.267 |
+| 2.56 | 240,000 | 75.5 dB | 17,492 / 24,170 | 3.693 / 3.708 / 3.786 / 4.170 |
+| 2.88 | 240,000 | 74.4 dB | 17,492 / 24,170 | 3.699 / 3.708 / 3.806 / 4.092 |
+| 3.20 | 240,000 | 74.5 dB | 17,492 / 24,170 | 3.662 / 3.670 / 3.751 / 4.125 |
+
+Those timings use internal output and 2,048-sample calls in the offline lab;
+they are not live replacement timings. At 3.20 MS/s, D alone is 71.5% of the
+5.12 ms input-block interval, before stereo/RDS/audio and ordinary DSP work.
+The 30-minute, 168,344-iteration D soak had zero D mismatches, but it
+reinitialized the frontend every iteration. It is an init/allocation/chunk
+stress test, **not** evidence of uninterrupted filter state. Persistent-state
+results are recorded separately below. The shorter chunk-continuity check
+was bit-identical at all four rates (6,554 / 6,144 / 5,462 / 4,916 output
+samples, respectively).
+
+The separate 12-minute **persistent-state** D run initialized two frontends
+once per rate, fed identical continuous deterministic IQ, and compared fixed
+16,384-sample calls with varied 1–7,001-sample calls. It processed 71,930
+blocks and 288,153 non-multiple-of-four pieces, with zero output/count
+mismatches. The float-only priority-8 aggressor ran 2,879,530 times at
+250 µs timer period with zero self-mismatches. Each rate received about
+294.6 million input samples (92–123 seconds at its nominal device rate);
+accumulated output
+count was exact or +1 sample due to initial phase. This establishes D's
+chunk-boundary/state continuity under forced scheduling pressure, not RF/audio
+acceptance. The transcript remains local and untracked at
+`artifacts/dsp-stage2/streamsoak-d-12min-float-preempt.txt`.
+
+The original sweep logs (`artifacts/dsp-stage2/sweep-final*.txt`) are one
+logical CU8+dither measurement. These numbers are from D/Q15 only:
+
+| Input MS/s | Sweep points | Measured gain range through ±100 kHz | Ripple | ±110 / ±120 / ±130 / ±135 kHz peak | Worst measured peak at \|f\|≥140 kHz |
+|---:|---:|---:|---:|---:|---:|
+| 2.40 | 151 | −0.05 to +0.05 dB | 0.10 dB | −2.46 / −7.78 / −21.62 / −33.05 dB | −60.56 dB (1,106.25 kHz) |
+| 2.56 | 153 | −0.04 to +0.05 dB | 0.09 dB | −2.45 / −7.77 / −21.67 / −33.15 dB | −60.65 dB (155 kHz) |
+| 2.88 | 140 | −0.04 to +0.04 dB | 0.08 dB | −2.41 / −7.76 / −21.84 / −33.51 dB | −61.95 dB (−150 kHz) |
+| 3.20 | 155 | −0.04 to +0.05 dB | 0.09 dB | −2.43 / −7.76 / −21.73 / −33.29 dB | −60.97 dB (150 kHz) |
+
+The transition is nearly symmetric; corresponding positive/negative peaks
+typically differ by less than 0.3 dB. The 2.88 MS/s log has a serial-capture
+gap, hence fewer points, but includes both sides of the passband/transition.
+No isolated in-band spur stands out in this sweep. The measured stop peaks sit
+near the CU8+dither floor, so they must not be presented as proof of a 60 dB
+device rejection at every frequency. Separately, the scipy coefficient design
+reports Q15 polyphase ripple/stopband of 0.092/60.0, 0.088/60.6,
+0.080/60.8 and 0.084/60.5 dB at 2.40/2.56/2.88/3.20 MS/s, respectively;
+the two Q15 halfbands have ≥61.1 and ≥71.7 dB fold rejection.
+
+One lab-only **exclusive live** run measured D at the default 2.40 MS/s FM
+rate with internal Cf32 output. The output was discarded, while USB, display,
+spectrum, level metering and ordinary scheduling stayed active; the legacy FM
+demodulator was skipped for those blocks. Over the latest 8,192 blocks:
+
+| Quantity | Measured |
+|---|---:|
+| Frontend avg / p95 / p99 / max | 4.372 / 7.632 / 8.814 / 9.433 ms |
+| Total DSP avg / p95 / p99 / max | 5.293 / 9.210 / 10.217 / 10.721 ms |
+| Blocks over 6.827 ms interval | 1,260 / 8,192 (15.4%) |
+| Steady 53.4 s window | 2,400,121 samples/s, 77% DSP load |
+| Queue high-water / backlog | 0 / 0 |
+| USB driver overruns / drops; OrcSDR pipeline drops | 0 / 0; 0 |
+| Overload safety yields | 10 |
+
+The live frontend average is ~0.71 ms above the offline internal-output
+benchmark, and its tail is much wider. This single window did **not** develop
+a sustained backlog or drops, but the total average already exceeds the
+earlier 70% DSP target at 2.40 MS/s, without discriminator/stereo/RDS/audio.
+It cannot qualify Candidate D at 3.20 MS/s. No Wi-Fi-active result was obtained:
+this lab firmware was built `-DspLab -WithoutC6`, and the boot log reported
+ESP-Hosted unavailable. These are explicit open gates, not implied passes.
+
+**Stage 2 decision:** Candidate D passes the measured correctness and filter
+checks, including the uninterrupted-state soak, but **fails the realtime
+headroom gate for production integration** on the available live evidence.
+The lab is now frozen behind `ORCSDR_DSP_LAB`; D2 was a lab-only implementation
+experiment and is not selected for production by this report. Do not claim
+all-rate WFM acceptance or connect D to the real audio path on this evidence.
+Stage 3, when the performance blocker is resolved, must preserve the existing
+240 kS/s WFM discriminator, stereo, RDS and 48 kHz audio behavior and must be
+accepted by physical radio behavior, including tuning, pitch, spectrum,
+stereo/RDS, queue growth, drops, rate-change recovery and watchdog stability.
