@@ -615,3 +615,25 @@ Stage 3, when the performance blocker is resolved, must preserve the existing
 240 kS/s WFM discriminator, stereo, RDS and 48 kHz audio behavior and must be
 accepted by physical radio behavior, including tuning, pitch, spectrum,
 stereo/RDS, queue growth, drops, rate-change recovery and watchdog stability.
+
+### Targeted D2 live follow-up
+
+After D missed the headroom target, the existing lab-only D2 implementation
+was run in the same exclusive/internal-output FM setup at **2.40 MS/s**. In
+the last 8,192-block timing ring, D2 frontend avg/p95/p99 was
+**3.553/6.352/7.346 ms**; total DSP was **4.463/8.152/9.048 ms**.
+The final 50.7-second counter window averaged **4.466 ms total, 65% load**,
+with queue high-water 0, backlog 0, overload yields 0, and no additional
+USB or pipeline drops. Relative to D's comparable live ring, D2 reduced
+frontend average by ~0.82 ms and total average by ~0.83 ms.
+
+The run was **not drop-free throughout**: earlier windows showed OrcSDR
+pipeline drops rising from 64 to 115, queue high-water 2, backlog and overload
+yields, while USB driver overrun/drop counters stayed zero. The cause of this
+transient is unproven; the final window only shows it stopped growing.
+Also, 985 of the final 8,192 blocks exceeded the 6.827 ms interval, and no
+exclusive live measurement was made at 2.56/2.88/3.20 MS/s. D2's
+exclusive-lab average is below 70% at this one rate **without** downstream
+WFM processing, but it is **not yet selected** for all-rate production WFM.
+The local transcripts are
+`artifacts/dsp-stage2/live-d2-internal-*.txt` (untracked).

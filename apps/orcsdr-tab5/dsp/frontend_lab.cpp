@@ -1257,7 +1257,7 @@ void command(const char* args, bool radio_running, Emit emit) {
   const int fields = sscanf(args, "%11s %23s %23s %23s", kind, x, y, z);
   if (fields < 1) {
     emitf("LAB_USAGE BENCH [runs] | TEST | SWEEP <0-3|-1> <cfg|-1> | CONT | COUNT <seconds> <cfg|-1> | PREEMPT [s] [period_us] | "
-          "SHADOW <cand> <f32|q15> [INTERNAL|PSRAM] | LIVE D [INTERNAL|PSRAM] | LIVE OFF | LIVE STATS | SHADOW OFF | SHADOW STATS | SHADOW RESET | CFGS | ARP4 | "
+          "SHADOW <cand> <f32|q15> [INTERNAL|PSRAM] | LIVE <D|D2> [INTERNAL|PSRAM] | LIVE OFF | LIVE STATS | SHADOW OFF | SHADOW STATS | SHADOW RESET | CFGS | ARP4 | "
            "SOAK <minutes> <cfg> [preempt_period_us] | STREAMSOAK <minutes> <8_D|9_D2> [preempt_period_us]");
     return;
   }
@@ -1302,19 +1302,20 @@ void command(const char* args, bool radio_running, Emit emit) {
       emitf("LAB_LIVE off");
     } else if (!strcmp(x, "STATS")) {
       shadow_stats();
-    } else if (!strcasecmp(x, "D")) {
+    } else if (!strcasecmp(x, "D") || !strcasecmp(x, "D2")) {
       if (*y && strcasecmp(y, "INTERNAL") && strcasecmp(y, "PSRAM")) {
         emitf("LAB_LIVE_ERROR output_must_be_INTERNAL_or_PSRAM");
         return;
       }
       g_ring_n.store(0);
       g_shadow_internal_want.store(strcasecmp(y, "PSRAM") != 0);
-      g_shadow_want.store(8);
+      const bool d2 = !strcasecmp(x, "D2");
+      g_shadow_want.store(d2 ? 9 : 8);
       g_live_want.store(true);
-      emitf("LAB_LIVE on cfg=D/q15 output=%s (FM only; frontend output discarded)",
-            strcasecmp(y, "PSRAM") ? "internal" : "psram");
+      emitf("LAB_LIVE on cfg=%s/q15 output=%s (FM only; frontend output discarded)",
+            d2 ? "D2" : "D", strcasecmp(y, "PSRAM") ? "internal" : "psram");
     } else {
-      emitf("LAB_LIVE_ERROR use_D_or_OFF_or_STATS");
+      emitf("LAB_LIVE_ERROR use_D_or_D2_or_OFF_or_STATS");
     }
     return;
   }
