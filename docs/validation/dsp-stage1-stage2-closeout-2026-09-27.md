@@ -279,3 +279,22 @@ The operator subsequently switched through AM/CB/FM: regular FM audio was
 clear. On returning to RF Lab, the sound-quality issue did not recur. The
 initial symptom is therefore intermittent and not reproduced by that page
 transition; no RF Lab/DSP behavior was changed for this report.
+
+## Clean production candidate and Wi-Fi closeout — 2026-09-27
+
+The preserved old P4 application artifact (`4A650413376D567A6E0E7C89C149F818CC9AACD8EF66D7A882FBB08708196661`) reproduced `esp_wifi_init()` failure `0x102` on two controlled boots. Clean committed `d46ad0b1` builds, and fresh builds of the prior local source modifications, initialized Wi-Fi successfully. No committed PR #114 change or individual local source edit was proven to cause the failure. The precise stale/generated build-state mechanism remains **Not Verified**. Production correction is to build committed source in a fresh build directory; neither TX buffers, CMake cache, the C6, nor DSP may be named as the proven cause.
+
+An isolated clean worktree at `d46ad0b1d2210c265a18f6dea80cc2e77f7fee54` produced the following application with the repository's native ESP-IDF 5.5.4 build script and existing pinned dependencies. The build reported `v5.5.4-dirty` for the installed IDF tree. No temporary Wi-Fi config dump or forced TX-buffer override was present. No source or build configuration changes were made.
+
+| Artifact / setting | Production-candidate result |
+|---|---|
+| `sdkconfig.defaults` SHA-256 | `C5F66E9DE8CD3B66A67985696A362DEBA560A8EE603F39B457E6B18671834C6A` |
+| Generated `sdkconfig` SHA-256 | `FBB640DBE3BF65D480E6D2AC36209D6DA11DF922E9A176492ABD76AE565C4F7C` |
+| `dependencies.lock` SHA-256 | `95338FC0B16B2DB5FF49DD7EEAE49A3F366989C107B4E25F744AEDF48ABE83A2` |
+| P4 ELF SHA-256 | `2B54DAC861C53EFCD3CBABF9C9EBBDFF90F1974CDE80250A2AB66DDD5F5FB8DC` |
+| P4 application BIN SHA-256 | `CD09A4041EDC726F7835DECC94DC35E12B69B3DB83857FF4053677264826C57A` |
+| `ORCSDR_DSP_AB` / `ORCSDR_DSP_LAB` / `ORCSDR_DSP_STAGE_TIMING` | `0` / `0` / `1` |
+
+The P4 application was flashed at `0x10000` and verified. The C6, NVS, partition table, bootloader, saved profiles, and credentials were not changed. Ten controlled reboot cycles were captured over COM17. All ten initialized a usable station with SDIO Hosted transport and host/C6 ESP-Hosted 3.0.6. Each had one initial association failure, one scheduled retry, an IP during splash, and Home reporting `station=1 hosted_match=1 stage=none error=0x0`. There were zero observed `0x102` errors, boot loops, or unexpected watchdog resets. This preserves the accepted SD → Wi-Fi startup/retry → RTL-SDR staging → splash gate/Home behavior; it does not imply the first association attempt succeeded.
+
+The normal production firmware retains the accepted Stage-1 DSP changes. The Stage-1 A/B harness and Stage-2 D/D2/D3 multirate lab remain disabled; normal WFM still acquires at 2.40 MS/s and feeds the existing 240 kS/s MPX/48 kHz audio path. 3.20 MS/s WFM audio remains unsupported. In a representative live FM window at 96.1 MHz, `RTL_DSP STATS` returned 2.40 MS/s, 52% DSP load, zero queue backlog, zero IQ pipeline/driver drops, zero audio drops/overruns/submit failures, and no overload yield over 17.03 seconds. The earlier startup-spanning window is not used as a steady-state load measurement. Audible FM, moving spectrum, RDS, and other-mode smoke results must be recorded separately after operator observation.
