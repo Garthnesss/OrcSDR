@@ -261,10 +261,13 @@ GainLayout gain_layout() {
 void draw_gain_control(bool compact) {
   const GainLayout layout = gain_layout();
   if (!g_snapshot.gain_available) {
-    button(layout.auto_x, layout.auto_y, layout.auto_w, layout.auto_h, "SMART", kMuted, false);
+    button(layout.auto_x, layout.auto_y, layout.auto_w, layout.auto_h,
+           g_snapshot.rtl_agc_available ? "RTL AGC" : "SMART",
+           g_snapshot.rtl_agc_available ? (g_snapshot.rtl_agc ? kGreen : kCyan) : kMuted,
+           g_snapshot.rtl_agc_available && g_snapshot.rtl_agc);
     text(compact ? "GAIN" : "RF GAIN", layout.slider_x,
          layout.slider_y - (compact ? 15 : 33), kMuted, 2, middle_left);
-    text("DIRECT Q", layout.slider_x + layout.slider_w,
+    text(g_snapshot.rtl_agc_available ? (g_snapshot.rtl_agc ? "DIRECT Q / ON" : "DIRECT Q / OFF") : "DIRECT Q", layout.slider_x + layout.slider_w,
          layout.slider_y - (compact ? 15 : 33), kMuted, 2, middle_right);
     M5.Display.fillRoundRect(layout.slider_x, layout.slider_y, layout.slider_w, 18, 9, kGrid);
     M5.Display.fillCircle(layout.slider_x, layout.slider_y + 9, compact ? 11 : 14, kMuted);
@@ -625,7 +628,17 @@ void draw_spectrum(const float* levels, size_t first_bin, size_t visible_bins, f
   M5.Display.endWrite();
 }
 
-Action gain_mode_toggle();
+Action gain_button_action(const Snapshot& snapshot) {
+  if (snapshot.gain_available) {
+    if (snapshot.gain_auto)
+      return {ActionKind::gain_tenth_db,
+              static_cast<uint32_t>(std::max(0, snapshot.gain_tenth_db))};
+    return {ActionKind::gain_auto};
+  }
+  if (snapshot.rtl_agc_available)
+    return {ActionKind::rtl_agc, snapshot.rtl_agc ? 0u : 1u};
+  return {};
+}
 
 Action handle_touch(int32_t x, int32_t y) {
   if (!g_active) return {};
@@ -672,9 +685,8 @@ Action handle_touch(int32_t x, int32_t y) {
   }
   if (g_view != View::finder) {
     const GainLayout layout = gain_layout();
-    if (g_snapshot.gain_available &&
-        hit(x, y, layout.auto_x, layout.auto_y, layout.auto_w, layout.auto_h))
-      return gain_mode_toggle();
+    if (hit(x, y, layout.auto_x, layout.auto_y, layout.auto_w, layout.auto_h))
+      return gain_button_action(g_snapshot);
   }
   if (g_view == View::listen) {
     if (hit(x, y, kTuneDownX, kListenRowY, kListenButtonW, kListenRowH))
@@ -802,15 +814,6 @@ TouchResult handle_preset_touch(int32_t x, int32_t y, bool pressed, uint32_t now
     return {{}, true};
   }
   return {};
-}
-
-// SMART -> MANUAL holds the gain SMART chose, so the level does not jump;
-// MANUAL -> SMART hands control back to the automatic search.
-Action gain_mode_toggle() {
-  if (g_snapshot.gain_auto)
-    return {ActionKind::gain_tenth_db,
-            static_cast<uint32_t>(std::max(0, static_cast<int>(g_snapshot.gain_tenth_db)))};
-  return {ActionKind::gain_auto};
 }
 
 Action handle_gain_drag(int32_t x, int32_t y) {
@@ -980,6 +983,13 @@ void populate_presets(Snapshot& snapshot) {
 }
 
 bool self_check() {
+  Snapshot gain{};
+  gain.rtl_agc_available = true;
+  const Action rtl_on = gain_button_action(gain);
+  gain.rtl_agc = true;
+  const Action rtl_off = gain_button_action(gain);
+  gain.gain_available = true;
+  const Action tuner_mode = gain_button_action(gain);
   const float scan_levels[] = {
       -80.0f, -70.0f, -80.0f, -60.0f, -80.0f, -50.0f, -80.0f};
   const float quiet_levels[] = {-80.0f, -80.0f, -80.0f};
@@ -988,6 +998,9 @@ bool self_check() {
   uint32_t presets[] = {590000, 1050000, 1280000};
   size_t preset_count = std::size(presets);
   return static_cast<uint8_t>(View::count) == 4 &&
+         rtl_on.kind == ActionKind::rtl_agc && rtl_on.value == 1 &&
+         rtl_off.kind == ActionKind::rtl_agc && rtl_off.value == 0 &&
+         tuner_mode.kind == ActionKind::gain_tenth_db &&
          receiver_bands::valid(receiver_bands::kAmBroadcast) &&
          kSpectrumX + kSpectrumW <= 1280 && kGainSliderX + kGainSliderW <= 1280 &&
          kTabsY < 720 && audio_header::self_check() &&

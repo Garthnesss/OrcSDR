@@ -26,6 +26,8 @@ struct Snapshot {
   uint8_t preset_page = 0;
   uint8_t preset_pages = 1;
   bool gain_available = false;
+  bool rtl_agc_available = false;
+  bool rtl_agc = false;
   bool gain_auto = true;
   bool gain_auto_selecting = false;
   float clipping_percent = 0.0f;
@@ -62,6 +64,7 @@ enum class ActionKind : uint8_t {
   recording_toggle,
   gain_auto,
   gain_tenth_db,
+  rtl_agc,
   scan_toggle,
   open_device_settings,
   exit_home,

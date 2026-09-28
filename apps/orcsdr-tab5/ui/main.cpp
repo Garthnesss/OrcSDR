@@ -2462,6 +2462,7 @@ orcsdr::fm::Snapshot fm_dashboard_snapshot();
 void handle_fm_dashboard_action(const orcsdr::fm::Action& action);
 orcsdr::am::Snapshot am_dashboard_snapshot();
 void handle_am_dashboard_action(const orcsdr::am::Action& action);
+esp_err_t rtl_gain_set_rtl_agc(const char* source, bool enabled);
 orcsdr::p25::Snapshot p25_dashboard_snapshot();
 void handle_p25_dashboard_action(const orcsdr::p25::Action& action);
 orcsdr::lora::Snapshot lora_dashboard_snapshot();
@@ -10203,6 +10204,12 @@ orcsdr::am::Snapshot am_dashboard_snapshot() {
   snapshot.scan_frequency_hz = rtl_am_scan_freq_hz.load(std::memory_order_relaxed);
 #if !RTL_USE_LEGACY_USB
   snapshot.gain_available = rtl_tuner_gain_available(snapshot.frequency_hz);
+  snapshot.rtl_agc_available = g_rtl != nullptr &&
+      (rtl_device_capabilities() & (ESP_RTL_SDR_CAP_DIRECT_SAMPLING | ESP_RTL_SDR_CAP_RTL_AGC)) ==
+          (ESP_RTL_SDR_CAP_DIRECT_SAMPLING | ESP_RTL_SDR_CAP_RTL_AGC) &&
+      snapshot.frequency_hz < kRtlNoHfMinHz;
+  if (snapshot.rtl_agc_available)
+    (void)esp_rtl_sdr_get_rtl_agc(g_rtl, &snapshot.rtl_agc);
   if (g_rtl != nullptr && snapshot.gain_available) {
     snapshot.gain_auto = rtl_am_gain_auto_enabled.load(std::memory_order_relaxed);
     snapshot.gain_auto_selecting =
@@ -10305,6 +10312,11 @@ void handle_am_dashboard_action(const orcsdr::am::Action& action) {
         Serial.printf("RTL_AM_GAIN mode=MANUAL gain_tenth_db=%lu result=%s\n",
                       static_cast<unsigned long>(action.value), esp_rtl_sdr_err_to_name(
                           esp_rtl_sdr_set_tuner_gain(g_rtl, static_cast<int>(action.value))));
+#endif
+      break;
+    case ActionKind::rtl_agc:
+#if !RTL_USE_LEGACY_USB
+      (void)rtl_gain_set_rtl_agc("AM", action.value != 0);
 #endif
       break;
     case ActionKind::scan_toggle:
@@ -12222,11 +12234,16 @@ orcsdr::home::Snapshot home_dashboard_snapshot(bool demo) {
       snapshot.effective_sps != previous.effective_sps ||
       static_cast<int>(snapshot.relative_dbfs) != static_cast<int>(previous.relative_dbfs) ||
       strcmp(snapshot.clock, previous.clock) != 0;
+  const bool gain_changed = previous.revision == 0 ||
+      snapshot.gain_available != previous.gain_available ||
+      snapshot.gain_auto != previous.gain_auto ||
+      snapshot.gain_tenth_db != previous.gain_tenth_db ||
+      snapshot.rtl_agc != previous.rtl_agc;
   snapshot.tuner_revision = previous.tuner_revision + (tuner_changed ? 1u : 0u);
   snapshot.audio_revision = previous.audio_revision + (audio_changed ? 1u : 0u);
   snapshot.status_revision = previous.status_revision + (status_changed ? 1u : 0u);
   snapshot.revision = previous.revision +
-      ((tuner_changed || audio_changed || status_changed) ? 1u : 0u);
+      ((tuner_changed || audio_changed || status_changed || gain_changed) ? 1u : 0u);
   previous = snapshot;
   return snapshot;
 }
