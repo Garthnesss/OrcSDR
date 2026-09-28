@@ -385,7 +385,7 @@ function Assert-FmAudioProgress {
 }
 
 function ConvertFrom-HealthStatus([string]$Line) {
-  if ($Line -notmatch '^RTL_HEALTH_STATUS uptime_ms=(\d+) free_heap=(\d+) min_free_heap=(\d+) dma_free=(\d+) dma_min=(\d+) dma_largest=(\d+) tasks=(\d+) main_stack_hwm=(\d+) reset_reason=(\d+)$') {
+  if ($Line -notmatch '^RTL_HEALTH_STATUS uptime_ms=(\d+) free_heap=(\d+) min_free_heap=(\d+) dma_free=(\d+) dma_min=(\d+) dma_largest=(\d+) tasks=(\d+) main_stack_hwm=(\d+) reset_reason=(\d+)(?: [a-z_]+=\d+)*$') {
     throw "Malformed health status: $Line"
   }
   return [pscustomobject]@{
@@ -1021,6 +1021,10 @@ function Invoke-SelfCheck {
   Assert-HealthStatus $health
   if ($health.UptimeMs -ne 123 -or $health.DmaLargest -ne 200 -or $health.MainStackHwm -ne 2048) {
     throw 'Health parser failed.'
+  }
+  $extendedHealth = ConvertFrom-HealthStatus 'RTL_HEALTH_STATUS uptime_ms=123 free_heap=456 min_free_heap=400 dma_free=300 dma_min=250 dma_largest=200 tasks=12 main_stack_hwm=2048 reset_reason=1 internal_free=350 psram_free=1000'
+  if ($extendedHealth.UptimeMs -ne 123 -or $extendedHealth.ResetReason -ne 1) {
+    throw 'Extended health parser failed.'
   }
   if (!(Test-UptimeAdvanced 4294967290 5) -or
       (Test-UptimeAdvanced 5000 100) -or
