@@ -4,9 +4,9 @@ This describes the release branch at `d30a033` on 2026-09-15. Historical plans
 and validation reports explain how the design arrived here but are not current
 architecture contracts.
 
-Development branch `claude/dsp-multirate` (draft PR #114) keeps the accepted
-Stage-1 production DSP path; its Stage-2 multirate lab is not production
-architecture. Branch-specific evidence is in the dated
+The accepted Stage-1 production DSP path (developed on `claude/dsp-multirate`,
+formerly draft PR #114) is part of `main` as of v0.3.0-beta.1; the Stage-2 multirate
+lab is not production architecture. Historical evidence is in the dated
 [DSP closeout](docs/validation/dsp-stage1-stage2-closeout-2026-09-27.md).
 
 ## Platform and dependency boundary
@@ -67,7 +67,7 @@ labels do not imply dedicated decoders or complete demodulation modes.
 - Protocol/DSP cores hold host-testable decode logic where already separated.
 - `main.cpp` still adapts IQ callbacks, mode policy, audio, tune changes, and
   snapshots into those modules.
-- In PR #114, `rtl_dsp_task` alone owns stateful demodulator/RDS state.
+- `rtl_dsp_task` alone owns stateful demodulator/RDS state.
   Other tasks request demod, RDS, SSB-BFO or full resets; the DSP task applies
   them in deterministic order at IQ-block boundaries. Block-local hot state,
   fused clipping/level work, batched RDS, measured FM/SSB `noinline` and the

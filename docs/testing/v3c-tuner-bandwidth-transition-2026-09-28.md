@@ -136,7 +136,7 @@ Passband response at -900 kHz relative to the same run's boot baseline (dB), V3c
 
 **V4L** carrier offset (kHz) through the stages, before and with the shared fix:
 
-| stage | before | fix, cold | fix, unplug/replug |
+| stage | before | fix, hot-swapped in | fix, unplug/replug |
 |---|---|---|---|
 | 200k | -312.0 | -1.7 | -2.5 |
 | 300k | -4.7 | -1.9 | -1.1 |
@@ -146,7 +146,7 @@ Passband response at -900 kHz relative to the same run's boot baseline (dB), V3c
 | 2.4M | +385.6 | +0.5 | +0.8 |
 | final AUTO | +0.3 | -0.9 | +1.0 |
 
-Final AUTO within 0.3 dB (cold) and 0.5 dB (replug) of boot. The V4L narrows both sides symmetrically.
+Final AUTO within 0.3 dB (hot-swapped in from a V3c session) and 0.5 dB (replug) of boot. No V4L run was a cold boot with the dongle already attached, so V4L cold-boot behaviour was not tested. The V4L narrows both sides symmetrically.
 
 **V4** (not measured before the fix): carrier within +1.2 kHz (cold) and +/-1.4 kHz (replug) at every
 stage; final AUTO within 0.2 dB (cold) and 0.4 dB (replug) of boot; the V4 narrows the left side only.
