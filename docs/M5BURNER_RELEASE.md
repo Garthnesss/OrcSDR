@@ -23,7 +23,35 @@ padding inside it. Earlier documentation that said otherwise was wrong.
 To **keep** settings, flash only the regions that hold code: bootloader at 0x2000, partition table at
 0x8000 and the application at 0x10000. Nothing is written to NVS (0x9000) or the C6. The bundle's
 `local-m5burner/firmware/` folder has those three files and a `flash.sh`; `install-orcsdr.ps1` does the same
-from a source checkout. A packaged installer for users is planned.
+from a source checkout.
+
+### Settings-safe installer (recommended for updates)
+
+Each release can ship a small installer zip that does exactly the safe flash for users, with no Python
+and no setup: `OrcSDR-Tab5-<tag>-installer-windows-amd64.zip` (Linux and macOS variants are built the same
+way but are **untested on real hardware**). It contains the three images, a pinned Espressif `esptool`
+executable (GPL-2.0-or-later; license included) and `install.bat` / `install.ps1` (or `install.sh`).
+
+Unzip, plug in the Tab5, double-click `install.bat`. The script:
+
+1. checks the size and SHA-256 of every file before touching the device;
+2. lists Espressif serial devices and never guesses when there is more than one;
+3. asks the chip to identify itself and refuses anything that is not an ESP32-P4;
+4. writes only 0x2000, 0x8000 and 0x10000 (no erase, no NVS at 0x9000, no C6), then lets `esptool` verify.
+
+Verified on a real Tab5 (2026-09-28): after the installer ran, the saved Wi-Fi profile, the connection and
+the event journal count were all unchanged.
+
+Build and test it from a checkout that already ran `build-m5burner.ps1` for the tag:
+
+```powershell
+.	oolseleaseuild-installer.ps1 -Version <tag>
+.	oolselease	est-installer-package.ps1 -Version <tag>
+```
+
+`esptool` is pinned in `tools/release/esptool-release.json` (version and SHA-256 per platform) and is
+cached in `.orcsdr-cache/esptool`. `test-installer-package.ps1` needs no device: fake `esptool` stubs stand in
+for a Tab5, another chip, and a tampered file.
 
 A C6
 that cannot establish Hosted transport is a manual recovery case; the separate
@@ -49,5 +77,5 @@ Releases](https://github.com/hardcoreerik/OrcSDR/releases).
 For a future release, use **USER CUSTOM → Publish** privately first and test
 with its Share Code. Only after the exact-tag hardware gate in
 [M5BURNER_HARDWARE_GATE.md](M5BURNER_HARDWARE_GATE.md) passes may its GitHub
-prerelease be created and its listing made public. M5Burner publishing details
+release be created and its listing made public. M5Burner publishing details
 are in the [official guide](https://docs.m5stack.com/en/uiflow/m5burner/publish).

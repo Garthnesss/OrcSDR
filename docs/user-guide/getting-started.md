@@ -18,7 +18,8 @@ Open M5Burner, select the OrcSDR Tab5 package, and burn it. **An M5Burner instal
 settings** (Wi-Fi profiles, location, screen rotation), so write them down first and expect to re-enter
 them. The package carries matching ESP-Hosted 3.0.6 firmware for the onboard C6.
 
-To keep your settings, flash the application manually instead; see
+To keep your settings, use the settings-safe installer zip from the release page instead: unzip it, plug in
+the Tab5 and double-click `install.bat`. It writes only the program, never your saved settings. Details are in
 [`docs/M5BURNER_RELEASE.md`](https://github.com/hardcoreerik/OrcSDR/blob/main/docs/M5BURNER_RELEASE.md).
 
 Current M5Burner search visibility was not independently reverified during the

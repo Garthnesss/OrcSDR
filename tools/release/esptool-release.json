@@ -1,0 +1,31 @@
+{
+  "version": "v5.4.0",
+  "source_repository": "https://github.com/espressif/esptool",
+  "license": "GPL-2.0-or-later",
+  "assets": {
+    "windows-amd64": {
+      "file": "esptool-v5.4.0-windows-amd64.zip",
+      "zip_sha256": "b7f6b9dd301a210b31f4829118c909c84aae23107f9ca1fdc14ccf4d7384be2e",
+      "folder": "esptool-windows-amd64",
+      "executable": "esptool.exe"
+    },
+    "linux-amd64": {
+      "file": "esptool-v5.4.0-linux-amd64.tar.gz",
+      "zip_sha256": "61648fbae20735cabb342f2fbe8fc89b3046e1ed6f9c3e09528d837dc9a9b152",
+      "folder": "esptool-linux-amd64",
+      "executable": "esptool"
+    },
+    "macos-arm64": {
+      "file": "esptool-v5.4.0-macos-arm64.tar.gz",
+      "zip_sha256": "ba332671130939e2e6db90c2784488f7e62a1459b0fe3c5ec66e9a366821de7a",
+      "folder": "esptool-macos-arm64",
+      "executable": "esptool"
+    },
+    "macos-amd64": {
+      "file": "esptool-v5.4.0-macos-amd64.tar.gz",
+      "zip_sha256": "910bb64fe39a84c792752701293c8aa294faeef229fe8705ecd6955b01db3778",
+      "folder": "esptool-macos-amd64",
+      "executable": "esptool"
+    }
+  }
+}
