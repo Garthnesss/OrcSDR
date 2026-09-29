@@ -11,8 +11,8 @@ dependencies:
     version: "^1.2.3"
   esp_rtl_sdr:
     git: https://github.com/hardcoreerik/esp-rtl-sdr.git
-    # 0.9.0 + live tuner-bandwidth fixes (read after each demod IF write for V3c/V4/V4L; V3c AUTO restores the boot filter state).
-    version: 2c6895d492d7b572feb97c516eeb0a853430a262
+    # esp_rtl_sdr v0.9.1 (published release)
+    version: 105caa56b9b5ce395a7b4910c6f703c14b83b5d9
   m5stack/m5unified:
     version: "0.2.20"
   m5stack/m5gfx:
