@@ -83,9 +83,14 @@ if ($Port -notmatch '^COM[0-9]+$') { Fail 5 "Port must look like COM5, not '$Por
 
 # 3. Ask the chip who it is. Only an ESP32-P4 may be written.
 Write-Host "Checking what is connected on $Port ..."
-$chipText = (& $esptool --port $Port --baud $Baud chip-id 2>&1 | Out-String)
-if ($chipText -notmatch 'ESP32-P4') {
-  $found = if ($chipText -match 'Chip type:\s*(.+)') { $Matches[1].Trim() } elseif ($chipText -match 'Detected chip type:\s*(.+)') { $Matches[1].Trim() } else { 'no answer' }
+# esptool prints harmless warnings on stderr (for example 'ESP32-P4 has no chip ID'); do not treat them as errors.
+$previousPreference = $ErrorActionPreference
+$ErrorActionPreference = 'Continue'
+try { $chipText = (& $esptool --port $Port --baud $Baud chip-id 2>&1 | ForEach-Object { "$_" } | Out-String) }
+finally { $ErrorActionPreference = $previousPreference }
+# Match the chip-type line itself, not any mention of the name (warnings can mention ESP32-P4).
+if ($chipText -notmatch '(?m)^\s*Chip type:\s+ESP32-P4') {
+  $found = if ($chipText -match 'Chip type:\s*(.+)') { $Matches[1].Trim() } else { 'no answer' }
   Fail 3 "The device on $Port is not an ESP32-P4 Tab5 ($found). Choose a different port."
 }
 Write-Host 'Tab5 (ESP32-P4) confirmed.' -ForegroundColor Green

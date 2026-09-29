@@ -21,7 +21,8 @@ function Check([string]$Name, [bool]$Ok, [string]$Detail = '') {
 }
 function New-Stub([string]$Name, [string]$ChipLine) {
   $path = Join-Path $work $Name
-  Set-Content -LiteralPath $path -Encoding ASCII -Value @('@echo off', "echo $ChipLine", 'exit /b 0')
+  # Like the real esptool, warn on stderr before answering.
+  Set-Content -LiteralPath $path -Encoding ASCII -Value @('@echo off', 'echo WARNING: ESP32-P4 has no chip ID. Reading MAC address instead. 1>&2', "echo $ChipLine", 'exit /b 0')
   return $path
 }
 function Copy-Package([string]$Name) {

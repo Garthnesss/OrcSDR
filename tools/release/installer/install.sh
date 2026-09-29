@@ -58,7 +58,7 @@ fi
 
 echo "Checking what is connected on $PORT ..."
 CHIP="$("$ESPTOOL" --port "$PORT" --baud "$BAUD" chip-id 2>&1)"
-echo "$CHIP" | grep -q 'ESP32-P4' || fail 3 "The device on $PORT is not an ESP32-P4 Tab5. Choose a different port."
+echo "$CHIP" | grep -Eq '^[[:space:]]*Chip type:[[:space:]]+ESP32-P4' || fail 3 "The device on $PORT is not an ESP32-P4 Tab5. Choose a different port."
 echo "Tab5 (ESP32-P4) confirmed."
 echo; echo "Will write:"; echo "$IMAGES" | xargs -n2 | sed 's/^/  /'
 echo "Will NOT write: NVS settings (0x9000), the C6 radio, or erase anything."
