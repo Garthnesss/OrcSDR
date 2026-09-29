@@ -1,0 +1,548 @@
+SPLASH_IMAGE ok bytes=137898 ms=377
+SPLASH_STATUS Starting???
+SPLASH_MODE embedded
+SPLASH_STATUS Loading settings???
+RTL_SERIAL_VERBOSITY mode=NORMAL
+RTL_REC_SD ready bus=sdmmc
+RTL_P25_CONFIG_LOAD status="Active P25 profile loaded" channels=4 talkgroups=8 control_hz=453925000 modulation=auto
+RTL_PRESETS_LOAD count=1
+RTL_FM_CONFIG_LOAD status="FM.cfg loaded" frequency_hz=96100000 presets=1
+RTL_FM_LOAD frequency_hz=96100000
+RTL_BAND_RESTORE band=FM frequency_hz=96100000
+RTL_WIFI_DEFER_TO_LOOP issue66
+RTL_WIFI_ANTENNA internal
+SPLASH_STATUS Checking SD card???
+SPLASH_STATUS Loading data packs and maps???
+SPLASH_STATUS Connecting to Wi-Fi "hardcorewifi"???
+RTL_WIFI_BOOT_CONNECT_QUEUED splash
+RTL_WIFI_C6_POWER_CYCLE ok
+RTL_WIFI_DMA free=161579 largest=81920 txq=4 rxq=2
+RTL_WIFI_ANTENNA internal
+I (4484) eh_mcu_transport: transport_init: probing bus backend
+I (4484) eh_sdio: transport[host]: SDIO 4-bit 10000 kHz CLK=12 CMD=13 D0=11 D1=10 D2=9 D3=8 RESET=15
+I (4485) sdmmc_periph: sdmmc_host_init: SDMMC host already initialized, skipping init flow
+W (4485) eh_sdio: SDIO clock freq set to [10000]KHz, Max possible (on PCB) is 40000KHz
+I (4485) eh_sdio: sdio_data_to_rx_buf_task started
+I (4486) eh_mcu_transport: transport_init: bus backend up
+E (4607) sdmmc_io: sdmmc_io_read_byte: sdmmc_io_rw_direct (read 0x3) returned 0x107
+E (4607) eh_host_port_sdio: sdio_card_fn_init failed
+E (4727) sdmmc_common: sdmmc_init_ocr: send_op_cond (1) returned 0x107
+E (4727) eh_host_port_sdio: sdmmc_card_init failed
+I (4857) eh_host_port_sdio: Function 0 Blocksize: 512
+I (4857) eh_host_port_sdio: Function 1 Blocksize: 512
+I (4957) eh_sdio: Card init success, TRANSPORT_RX_ACTIVE
+I (4986) eh_sdio: SDIO Host operating in STREAMING MODE
+I (4986) eh_sdio: Open data path at slave
+I (4986) eh_sdio: Starting SDIO process rx task
+I (4998) eh_init_evt: slave chip id: 0x0d (esp32c6)
+I (4999) eh_init_evt: capabilities: 0x01
+I (4999) eh_init_evt: Features supported are:
+I (4999) eh_init_evt: 	 * WLAN over SDIO
+I (4999) eh_init_evt: extended capabilities: 0x00000010
+I (4999) eh_init_evt: Extended Features supported:
+I (4999) eh_init_evt: 	 * WLAN
+I (4999) eh_init_evt: SDIO buf-config: e2h mode=0 bufsz=15872B, h2e mode=0 bufsz=15872B
+I (4999) eh_init_evt: RPC version negotiated: V2
+I (4999) eh_init_evt: esp-hosted fw versions: host=3.0.6 coprocessor=3.0.6 (match)
+I (5000) eh_init_evt: SDIO SW_AGGR negotiated (e2h=15872B h2e=15872B)
+I (5000) eh_init_evt: SDIO mode: slave=streaming host=streaming
+I (5000) eh_init_evt: chip=0x0d (esp32c6) fw=0x00030006 caps=0x01 ext=0x00000010
+W (5000) eh_host_port_xport_defaults: SDIO clock freq set to [10000]KHz, Max possible (on PCB) is 40000KHz
+I (5000) eh_auto_init: auto_init: found 1 descriptor(s)
+I (5001) eh_auto_init: auto_init: initialising 'wifi' (priority 150)
+I (5001) eh_wifi_itwt: wifi iTWT ext init
+I OrcSDR: ESP32-C6 detected
+I OrcSDR: ESP-Hosted C6 FW: 3.0.6
+I OrcSDR: ESP-Hosted transport: SDIO
+RTL_WIFI_INIT station=1 core=0
+I (5415) eh_wifi: rx RPC WifiEventNoArgs id=2
+RTL_DRAM_BUDGET stage=after_wifi dma_free=142563 dma_largest=81920 intern_free=180579 intern_largest=81920 psram_free=25312940 psram_largest=25165824 always_int=8192 reserve_int=40960 hosted_dma_psram=1 usb_dma_psram=1 lwip_psram=1
+RTL_WIFI_DMA pre_connect free=142167 largest=81920
+I (5415) eh_wifi: set_config iface=STA ssid="hardcorewifi" (12 bytes)
+I (5448) eh_wifi: rx RPC WifiEventNoArgs id=2
+RTL_WIFI_COEX event=connect_started elapsed_ms=0 effective_sps=0 usb_overruns=0 usb_drops=0 audio_chunks=0 audio_drops=0 dsp_block_us_max=0 ui_fps=0 connect_pause=1 rtl_ready=0 capture_state=0 capture_requested=0 band=FM frequency_hz=96100000 audio_enabled=1 speaker_running=0
+RTL_HEALTH_STATUS uptime_ms=4200 free_heap=25454864 min_free_heap=25451296 dma_free=142563 dma_min=140171 dma_largest=81920 tasks=16 main_stack_hwm=6200 reset_reason=11 internal_free=182119 internal_min=179727 internal_largest=81920 psram_free=25312900 psram_largest=25165824
+RTL_HEALTH_STATUS uptime_ms=4200 free_heap=25454864 min_free_heap=25451296 dma_free=142563 dma_min=140171 dma_largest=81920 tasks=16 main_stack_hwm=6200 reset_reason=11 internal_free=182119 internal_min=179727 internal_largest=81920 psram_free=25312900 psram_largest=25165824
+RTL_HEALTH_STATUS uptime_ms=4200 free_heap=25454864 min_free_heap=25451296 dma_free=142563 dma_min=140171 dma_largest=81920 tasks=16 main_stack_hwm=6200 reset_reason=11 internal_free=182119 internal_min=179727 internal_largest=81920 psram_free=25312900 psram_largest=25165824
+PAIR_OK
+AUTH_OK [redacted]
+RTL_UI_SOAK_AUTH verified=1
+SPLASH_BOOT done
+{"type":"hello","message_id":"m5tab5_hello_01","protocol_version":{"major":1,"minor":0},"payload":{"adapter":{"id":"m5tab5.serial","version":"0.8.31"},"features":["telemetry","display","touch","authenticated_session","journal","network_inventory","wifi_provisioning","power_telemetry","usb_host","rtl_sdr_probe","rtl_sdr_radio_ui","rtl_sdr_scope_scroll"],"capability_namespaces":["m5tab5"],"config_schema_version":1}}
+{"type":"node_snapshot","message_id":"m5tab5_snapshot_4319","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","connection_state":"online","hardware":{"chip":"esp32p4","revision":103,"cores":2,"flash_bytes":16777216,"psram_bytes":33554432,"free_heap_bytes":25454776,"display":{"width":1280,"height":720,"touch_ready":true}},"network":{"transport":"esp_hosted_sdio","station_ready":true,"configured":true,"scan_result":-1,"connected":false,"ip":"0.0.0.0"},"power":{"source":"m5unified","pmic_detected":false,"pmic_type":0,"battery_level":99,"battery_mv":8184,"battery_ma":2,"vbus_mv":-1,"charging":"unknown"},"journal":{"latest_sequence":1723,"acknowledged_sequence":0,"pending":8,"dropped":1715},"offline_workflow":{"id":"status_on_disconnect","config_revision":0,"runs":0,"max_runs":0},"capabilities":["m5tab5.device.info","m5tab5.health.read","m5tab5.display.status","m5tab5.input.touch","m5tab5.event.journal.sync","m5tab5.network.inventory","m5tab5.network.configure","m5tab5.power.read"]}}
+{"type":"event","message_id":"m5tab5_journal_1716","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1716,"event_kind":"session_online","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1717","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1717,"event_kind":"session_online","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1718","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1718,"event_kind":"session_online","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1719","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1719,"event_kind":"session_online","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1720","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1720,"event_kind":"session_online","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1721","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1721,"event_kind":"session_online","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1722","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1722,"event_kind":"session_degraded","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1723","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1723,"event_kind":"session_online","x":-1,"y":-1}}
+SPLASH_STATUS Wi-Fi not connected yet - will keep retrying
+RTL_WIFI_BOOT_SPLASH connected=0 elapsed_ms=1407 reconnect_attempts=0 station=1
+BOOT_STAGE usb_power_settle
+SPLASH_STATUS Ready
+SPLASH_READY 1
+SPLASH_STATUS SD card: ready   |   Wi-Fi: retrying   |   RTL-SDR: not detected
+BOOT_SPLASH_SUMMARY sd=1 wifi=0 rtl=0
+SPLASH_WAIT start auto_enter_ms=30000
+SPLASH_BOOT done
+BOOT_STAGE speaker_start
+RTL_SPEAKER_DMA len=256 count=2 largest=81920
+RTL_SPEAKER_DMA len=256 count=2 largest=81920
+RTL_SPEAKER_CODEC_PRIME ok
+RTL_DRAM_BUDGET stage=speaker_before_usb dma_free=136907 dma_largest=81920 intern_free=176463 intern_largest=81920 psram_free=25312380 psram_largest=25165824 always_int=8192 reserve_int=40960 hosted_dma_psram=1 usb_dma_psram=1 lwip_psram=1
+RTL_IQ_PIPELINE ready slots=3 bytes=33280 core=1 priority=6
+I (6021) esp_rtl_sdr: [RTL0] USB host session started (shared)
+I (6021) esp_rtl_sdr: [RTL0] install v0.9.0 caps=0x001fff7f xfer=3x32768 bind=any
+RTL_INSTALL ok v0.9.0 caps=0x001fff7f delivery=callback xfer=3x32768 usb_core=0
+RTL_CORE_SPLIT usb=core0 callback=enqueue dsp_audio_ui_hosted=core1
+RTL_DRAM_BUDGET stage=after_usb dma_free=119767 dma_largest=77824 intern_free=159323 intern_largest=77824 psram_free=25039740 psram_largest=24641536 always_int=8192 reserve_int=40960 hosted_dma_psram=1 usb_dma_psram=1 lwip_psram=1
+BOOT_STAGE rtl_enumerating
+RTL_AUDIO_ROUTE headphone=1 internal_speaker_muted=1
+RTL_SPEAKER_IDLE reason=no_receiver
+I (6041) esp_rtl_sdr: [RTL0] usb probe_rescan
+I (6422) esp_rtl_sdr: [RTL0] usb new_device addr=1 queued=1
+I (6422) esp_rtl_sdr: [RTL0] usb probe_begin addr=1
+I (6423) esp_rtl_sdr: [RTL0] USB device opened addr=1 path=root serial=00000001 hs=1
+I (6423) esp_rtl_sdr: [RTL0] tuner=blog_v4l_r828s caps=0x001fff3f
+RTL_SDR_PROBE_OK profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f driver=esp_rtl_sdr v0.9.0 ready=1 resume_pending=1
+RTL_SPEAKER_DMA len=256 count=2 largest=77824
+RTL_SPEAKER_RESUME ok=1 running=1 playing=0 volume=160
+RTL_DRAM_BUDGET stage=after_speaker dma_free=119615 dma_largest=77824 intern_free=159171 intern_largest=77824 psram_free=25038328 psram_largest=24641536 always_int=8192 reserve_int=40960 hosted_dma_psram=1 usb_dma_psram=1 lwip_psram=1
+BOOT_STAGE speaker_settle
+RTL_DRAM_BUDGET stage=ready dma_free=119615 dma_largest=77824 intern_free=159171 intern_largest=77824 psram_free=25038328 psram_largest=24641536 always_int=8192 reserve_int=40960 hosted_dma_psram=1 usb_dma_psram=1 lwip_psram=1
+BOOT_STAGE ready
+RTL_FREQ_STATUS band=FM frequency_hz=96100000 mode=WBFM
+RTL_SOUND_STATUS enabled=1
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=IDLE profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=AUTO gain_tenth_db=0 rtl_agc=0 bias=0 bytes=0 blocks=0 effective_sps=0 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=0 route=TUNER bw_requested_hz=0 bw_applied_hz=0
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=IDLE profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=AUTO gain_tenth_db=0 rtl_agc=0 bias=0 bytes=0 blocks=0 effective_sps=0 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=0 route=TUNER bw_requested_hz=0 bw_applied_hz=0
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=IDLE profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=AUTO gain_tenth_db=0 rtl_agc=0 bias=0 bytes=0 blocks=0 effective_sps=0 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=0 route=TUNER bw_requested_hz=0 bw_applied_hz=0
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=IDLE profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=AUTO gain_tenth_db=0 rtl_agc=0 bias=0 bytes=0 blocks=0 effective_sps=0 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=0 route=TUNER bw_requested_hz=0 bw_applied_hz=0
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=IDLE profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=AUTO gain_tenth_db=0 rtl_agc=0 bias=0 bytes=0 blocks=0 effective_sps=0 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=0 route=TUNER bw_requested_hz=0 bw_applied_hz=0
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=IDLE profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=AUTO gain_tenth_db=0 rtl_agc=0 bias=0 bytes=0 blocks=0 effective_sps=0 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=0 route=TUNER bw_requested_hz=0 bw_applied_hz=0
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=IDLE profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=AUTO gain_tenth_db=0 rtl_agc=0 bias=0 bytes=0 blocks=0 effective_sps=0 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=0 route=TUNER bw_requested_hz=0 bw_applied_hz=0
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=IDLE profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=AUTO gain_tenth_db=0 rtl_agc=0 bias=0 bytes=0 blocks=0 effective_sps=0 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=0 route=TUNER bw_requested_hz=0 bw_applied_hz=0
+RTL_WIFI_BOOT_STATUS station=1 hosted_match=1 stage=none error=0x0 message="Testing connection"
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=IDLE profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=AUTO gain_tenth_db=0 rtl_agc=0 bias=0 bytes=0 blocks=0 effective_sps=0 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=0 route=TUNER bw_requested_hz=0 bw_applied_hz=0
+I (12050) eh_wifi: rx RPC StaDisconnected ssid="hardcorewifi" reason=2 rssi=-34
+W (12050) orcsdr_wifi: station disconnected reason=2
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=IDLE profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=AUTO gain_tenth_db=0 rtl_agc=0 bias=0 bytes=0 blocks=0 effective_sps=0 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=0 route=TUNER bw_requested_hz=0 bw_applied_hz=0
+RTL_WIFI_COEX event=connect_failed elapsed_ms=6861 effective_sps=0 usb_overruns=0 usb_drops=0 audio_chunks=0 audio_drops=0 dsp_block_us_max=0 ui_fps=0 connect_pause=1 rtl_ready=1 capture_state=1 capture_requested=0 band=FM frequency_hz=96100000 audio_enabled=1 speaker_running=1
+RTL_WIFI_RECONNECT_SCHEDULED reason=connect_failed attempt=1 delay_ms=3000
+RTL_HOTPLUG_RESUME band=FM frequency_hz=96100000 queued=1
+r: HF direct route min=0 Hz (0 = upconverter)
+RTL_HF_ROUTE band=FM route=UPCONVERTER min_hz=0 result=ESP_OK
+I (12281) esp_rtl_sdr: blog_v4l_r828s: R828S on the shared R820T2 stream path (I2C 0x34 remap); measured HF upconverter route
+I (12282) esp_rtl_sdr: init begin profile=blog_v4l_r828s records=515
+E (12497) USBH: Dev 1 EP 0 STALL
+E (12499) USBH: Dev 1 EP 0 STALL
+E (12502) USBH: Dev 1 EP 0 STALL
+E (12505) USBH: Dev 1 EP 0 STALL
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=STARTING profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=AUTO gain_tenth_db=0 rtl_agc=0 bias=0 bytes=0 blocks=0 effective_sps=0 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=0 route=TUNER bw_requested_hz=0 bw_applied_hz=0
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=STARTING profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=AUTO gain_tenth_db=0 rtl_agc=0 bias=0 bytes=0 blocks=0 effective_sps=0 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=0 route=TUNER bw_requested_hz=0 bw_applied_hz=0
+I (13347) esp_rtl_sdr: init complete profile=blog_v4l_r828s skipped_v4_board=12
+I (13402) esp_rtl_sdr: [RTL0] rate readback sps=2400000 expected=0x03000000 actual=0x03000000 match=1
+I (13547) esp_rtl_sdr: tune rf=96100000 Hz tuner=96100000 Hz ppm=0 hf_upconv=0 r16=a4/84 r20=4a r21=af r22=65 pll_if_hz=1814972
+I (13601) esp_rtl_sdr: [RTL0] stream start freq=96100000 sps=2400000 urbs=3x32768
+I (13601) esp_rtl_sdr: stream start freq=96100000 exact_rate=2400000 urbs=3x32768
+RTL_START ESP_OK rate=2400000 display_hz=96100000 lo_hz=96100000
+RTL_WBFM_DSP rate=2400000 filter_hz=260000 iq_lpf_k=0.29 audio_lpf_k=0.34 decim=10/5 note=app_side_filter
+RTL_SPEAKER_RESUME ok=1 running=1 playing=0 volume=128
+RTL_STOP_REQUESTED
+RTL_STOP_RESULT ESP_OK
+RTL_STOP bytes=0
+I (13646) esp_rtl_sdr: HF direct route min=0 Hz (0 = upconverter)
+RTL_HF_ROUTE band=FM route=UPCONVERTER min_hz=0 result=ESP_OK
+I (13646) esp_rtl_sdr: blog_v4l_r828s: R828S on the shared R820T2 stream path (I2C 0x34 remap); measured HF upconverter route
+I (13647) esp_rtl_sdr: init begin profile=blog_v4l_r828s records=515
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=STARTING profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=AUTO gain_tenth_db=0 rtl_agc=0 bias=0 bytes=0 blocks=0 effective_sps=0 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=1 route=TUNER bw_requested_hz=0 bw_applied_hz=0
+E (13862) USBH: Dev 1 EP 0 STALL
+E (13865) USBH: Dev 1 EP 0 STALL
+E (13867) USBH: Dev 1 EP 0 STALL
+E (13870) USBH: Dev 1 EP 0 STALL
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=STARTING profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=AUTO gain_tenth_db=0 rtl_agc=0 bias=0 bytes=0 blocks=0 effective_sps=0 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=1 route=TUNER bw_requested_hz=0 bw_applied_hz=0
+I (14712) esp_rtl_sdr: init complete profile=blog_v4l_r828s skipped_v4_board=12
+I (14767) esp_rtl_sdr: [RTL0] rate readback sps=2400000 expected=0x03000000 actual=0x03000000 match=1
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=STARTING profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=AUTO gain_tenth_db=0 rtl_agc=0 bias=0 bytes=0 blocks=0 effective_sps=0 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=1 route=TUNER bw_requested_hz=0 bw_applied_hz=0
+I (14912) esp_rtl_sdr: tune rf=96100000 Hz tuner=96100000 Hz ppm=0 hf_upconv=0 r16=a4/84 r20=4a r21=af r22=65 pll_if_hz=1814972
+I (14966) esp_rtl_sdr: [RTL0] stream start freq=96100000 sps=2400000 urbs=3x32768
+I (14966) esp_rtl_sdr: stream start freq=96100000 exact_rate=2400000 urbs=3x32768
+RTL_START ESP_OK rate=2400000 display_hz=96100000 lo_hz=96100000
+RTL_WBFM_DSP rate=2400000 filter_hz=260000 iq_lpf_k=0.29 audio_lpf_k=0.34 deIcim= 10/5 (note1=app4_side9_fil6ter
+7RTL_)SPEAK ER_eRESsUME pok=rt1 rlunni_ng=1s pladyingr=0 vo:lume =128
+tuner gain applied 0 (0.1 dB) [profile table]
+RTL_FM_AUTO_GAIN start gain_tenth_db=0 target_dbfs=-24.0
+I (14999) esp_rtl_sdr: tuner gain applied 0 (0.1 dB) [async]
+RTL_WIFI_RECONNECT attempt=1
+RTL_STOP_REQUESTED
+RTL_STOP_RESULT ESP_OK
+RTL_STOP bytes=1409024
+RTL_WIFI_DMA pre_connect free=117643 largest=69632
+I (15317) eh_wifi: set_config iface=STA ssid="hardcorewifi" (12 bytes)
+RTL_WIFI_COEX event=connect_started elapsed_ms=0 effective_sps=0 usb_overruns=0 usb_drops=0 audio_chunks=7 audio_drops=0 dsp_block_us_max=8152 ui_fps=1 connect_pause=1 rtl_ready=1 capture_state=4 capture_requested=0 band=FM frequency_hz=96100000 audio_enabled=1 speaker_running=0
+RTL_SPEAKER_WATCHDOG restart
+RTL_SPEAKER_DMA len=256 count=2 largest=69632
+RTL_SPEAKER_RESUME ok=1 running=1 playing=0 volume=128
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=IDLE profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=MANUAL gain_tenth_db=0 rtl_agc=0 bias=0 bytes=1409024 blocks=43 effective_sps=0 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=1 route=TUNER bw_requested_hz=0 bw_applied_hz=0
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=IDLE profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=MANUAL gain_tenth_db=0 rtl_agc=0 bias=0 bytes=1409024 blocks=43 effective_sps=0 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=1 route=TUNER bw_requested_hz=0 bw_applied_hz=0
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=IDLE profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=MANUAL gain_tenth_db=0 rtl_agc=0 bias=0 bytes=1409024 blocks=43 effective_sps=0 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=1 route=TUNER bw_requested_hz=0 bw_applied_hz=0
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=IDLE profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=MANUAL gain_tenth_db=0 rtl_agc=0 bias=0 bytes=1409024 blocks=43 effective_sps=0 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=1 route=TUNER bw_requested_hz=0 bw_applied_hz=0
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=IDLE profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=MANUAL gain_tenth_db=0 rtl_agc=0 bias=0 bytes=1409024 blocks=43 effective_sps=0 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=1 route=TUNER bw_requested_hz=0 bw_applied_hz=0
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=IDLE profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=MANUAL gain_tenth_db=0 rtl_agc=0 bias=0 bytes=1409024 blocks=43 effective_sps=0 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=1 route=TUNER bw_requested_hz=0 bw_applied_hz=0
+I (18279) esp_wifi_remote: esp_wifi_internal_reg_rxcb: sta: 0x4812e356
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=IDLE profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=MANUAL gain_tenth_db=0 rtl_agc=0 bias=0 bytes=1409024 blocks=43 effective_sps=0 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=1 route=TUNER bw_requested_hz=0 bw_applied_hz=0
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=IDLE profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=MANUAL gain_tenth_db=0 rtl_agc=0 bias=0 bytes=1409024 blocks=43 effective_sps=0 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=1 route=TUNER bw_requested_hz=0 bw_applied_hz=0
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=IDLE profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=MANUAL gain_tenth_db=0 rtl_agc=0 bias=0 bytes=1409024 blocks=43 effective_sps=0 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=1 route=TUNER bw_requested_hz=0 bw_applied_hz=0
+I (19844) esp_netif_handlers: sta ip: 192.168.1.75, mask: 255.255.255.0, gw: 192.168.1.1
+RTL_WIFI_CONNECTED
+RTL_WIFI_COEX event=connect_complete elapsed_ms=4533 effective_sps=0 usb_overruns=0 usb_drops=0 audio_chunks=7 audio_drops=0 dsp_block_us_max=8152 ui_fps=1 connect_pause=1 rtl_ready=1 capture_state=4 capture_requested=0 band=FM frequency_hz=96100000 audio_enabled=1 speaker_running=1
+RTL_SPEAKER_RESUME ok=1 running=1 playing=0 volume=128
+I (19853) esp_rtl_sdr: HF direct route min=0 Hz (0 = upconverter)
+RTL_HF_ROUTE band=FM route=UPCONVERTER min_hz=0 result=ESP_OK
+I (19853) esp_rtl_sdr: blog_v4l_r828s: R828S on the shared R820T2 stream path (I2C 0x34 remap); measured HF upconverter route
+I (19854) esp_rtl_sdr: init begin profile=blog_v4l_r828s records=515
+E (20069) USBH: Dev 1 EP 0 STALL
+E (20072) USBH: Dev 1 EP 0 STALL
+E (20075) USBH: Dev 1 EP 0 STALL
+E (20077) USBH: Dev 1 EP 0 STALL
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=STARTING profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=MANUAL gain_tenth_db=0 rtl_agc=0 bias=0 bytes=1409024 blocks=43 effective_sps=0 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=1 route=TUNER bw_requested_hz=0 bw_applied_hz=0
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=STARTING profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=MANUAL gain_tenth_db=0 rtl_agc=0 bias=0 bytes=1409024 blocks=43 effective_sps=0 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=1 route=TUNER bw_requested_hz=0 bw_applied_hz=0
+I (20920) esp_rtl_sdr: init complete profile=blog_v4l_r828s skipped_v4_board=12
+I (20975) esp_rtl_sdr: [RTL0] rate readback sps=2400000 expected=0x03000000 actual=0x03000000 match=1
+I (21120) esp_rtl_sdr: tune rf=96100000 Hz tuner=96100000 Hz ppm=0 hf_upconv=0 r16=a4/84 r20=4a r21=af r22=65 pll_if_hz=1814972
+I (21173) esp_rtl_sdr: [RTL0] stream start freq=96100000 sps=2400000 urbs=3x32768
+I (21173) esp_rtl_sdr: stream start freq=96100000 exact_rate=2400000 urbs=3x32768
+RTL_START ESP_OK rate=2400000 display_hz=96100000 lo_hz=96100000
+RTL_WBFM_DSP rate=2400000 filter_hz=260000 iq_lpf_k=0.29 audio_lpf_k=0.34 decim=10/5 note=app_side_filter
+RTL_SPEAKER_RESUME ok=I 1 run(ning2=1 p1layin1g=0 7volu4me=1)28
+esp_rtl_sdr: tuner gain applied 9 (0.1 dB) [profile table]
+I (21209) esp_rtl_sdr: tuner gain applied 9 (0.1 dB) [async]
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=STREAMING profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=MANUAL gain_tenth_db=9 rtl_agc=0 bias=0 bytes=688128 blocks=21 effective_sps=1977379 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=1 route=TUNER bw_requested_hz=0 bw_applied_hz=0
+I (21679) esp_rtl_sdr: tuner gain applied 14 (0.1 dB) [profile table]
+I (21707) esp_rtl_sdr: tuner gain applied 14 (0.1 dB) [async]
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=STREAMING profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=MANUAL gain_tenth_db=14 rtl_agc=0 bias=0 bytes=3506176 blocks=107 effective_sps=2224730 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=1 route=TUNER bw_requested_hz=0 bw_applied_hz=0
+I (22184) esp_rtl_sdr: tuner gain applied 27 (0.1 dB) [profile table]
+I (22213) esp_rtl_sdr: tuner gain applied 27 (0.1 dB) [async]
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=STREAMING profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=MANUAL gain_tenth_db=27 rtl_agc=0 bias=0 bytes=5898240 blocks=180 effective_sps=2244383 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=1 route=TUNER bw_requested_hz=0 bw_applied_hz=0
+RTL_FM_AUTO_GAIN selected gain_tenth_db=27 level_dbfs=-22.7 clipping_percent=0.001
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=STREAMING profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=MANUAL gain_tenth_db=27 rtl_agc=0 bias=0 bytes=8421376 blocks=257 effective_sps=2289661 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=1 route=TUNER bw_requested_hz=0 bw_applied_hz=0
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=STREAMING profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=MANUAL gain_tenth_db=27 rtl_agc=0 bias=0 bytes=10977280 blocks=335 effective_sps=2313929 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=1 route=TUNER bw_requested_hz=0 bw_applied_hz=0
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=STREAMING profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=MANUAL gain_tenth_db=27 rtl_agc=0 bias=0 bytes=13533184 blocks=413 effective_sps=2326088 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=1 route=TUNER bw_requested_hz=0 bw_applied_hz=0
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=STREAMING profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=MANUAL gain_tenth_db=27 rtl_agc=0 bias=0 bytes=16056320 blocks=490 effective_sps=2337845 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=1 route=TUNER bw_requested_hz=0 bw_applied_hz=0
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=STREAMING profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=MANUAL gain_tenth_db=27 rtl_agc=0 bias=0 bytes=18612224 blocks=568 effective_sps=2348841 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=1 route=TUNER bw_requested_hz=0 bw_applied_hz=0
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=STREAMING profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=MANUAL gain_tenth_db=27 rtl_agc=0 bias=0 bytes=21135360 blocks=645 effective_sps=2354652 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=1 route=TUNER bw_requested_hz=0 bw_applied_hz=0
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=STREAMING profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=MANUAL gain_tenth_db=27 rtl_agc=0 bias=0 bytes=23658496 blocks=722 effective_sps=2359243 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=1 route=TUNER bw_requested_hz=0 bw_applied_hz=0
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=STREAMING profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=MANUAL gain_tenth_db=27 rtl_agc=0 bias=0 bytes=26181632 blocks=799 effective_sps=2362963 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=1 route=TUNER bw_requested_hz=0 bw_applied_hz=0
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=STREAMING profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=MANUAL gain_tenth_db=27 rtl_agc=0 bias=0 bytes=28704768 blocks=876 effective_sps=2364868 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=1 route=TUNER bw_requested_hz=0 bw_applied_hz=0
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=STREAMING profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=MANUAL gain_tenth_db=27 rtl_agc=0 bias=0 bytes=31227904 blocks=953 effective_sps=2367543 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=1 route=TUNER bw_requested_hz=0 bw_applied_hz=0
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=STREAMING profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=MANUAL gain_tenth_db=27 rtl_agc=0 bias=0 bytes=33751040 blocks=1030 effective_sps=2370157 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=1 route=TUNER bw_requested_hz=0 bw_applied_hz=0
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=STREAMING profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=MANUAL gain_tenth_db=27 rtl_agc=0 bias=0 bytes=36274176 blocks=1107 effective_sps=2373343 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=1 route=TUNER bw_requested_hz=0 bw_applied_hz=0
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=STREAMING profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=MANUAL gain_tenth_db=27 rtl_agc=0 bias=0 bytes=38797312 blocks=1184 effective_sps=2374085 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=1 route=TUNER bw_requested_hz=0 bw_applied_hz=0
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=STREAMING profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=MANUAL gain_tenth_db=27 rtl_agc=0 bias=0 bytes=41320448 blocks=1261 effective_sps=2375557 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=1 route=TUNER bw_requested_hz=0 bw_applied_hz=0
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=STREAMING profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=MANUAL gain_tenth_db=27 rtl_agc=0 bias=0 bytes=41385984 blocks=1263 effective_sps=2376592 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=1 route=TUNER bw_requested_hz=0 bw_applied_hz=0
+RTL_DONGLE_GATE_BEGIN dongle=V4L profile=blog_v4l_r828s frequency_hz=96100000 driver_hz=96100000 bw_requested_hz=0 log=C:\Users\hardc\.codex\worktrees\v3c-tuner-bw-closeout\OrcSDR\artifacts\rtl-dongle-gate\20260928-172449-v4l.log
+RTL_DRIVER_SELF_CHECK pass=1 version=0.9.0 profile=4 device_caps=0x001fff3f required=0x000f810b
+RTL_HEALTH_STATUS uptime_ms=28669 free_heap=24852424 min_free_heap=24849100 dma_free=112235 dma_min=110135 dma_largest=69632 tasks=24 main_stack_hwm=6200 reset_reason=11 internal_free=151791 internal_min=149691 internal_largest=69632 psram_free=24740788 psram_largest=24641536
+RTL_IQ_DIAG_STATUS transition="none" sequence=0 active=0 ready=0 bytes=0 max_bytes=1920000 rate=960000 frequency_hz=0 started_ms=0
+RTL_IQ_START source=diagnostic mode=manual bytes=4800000 seconds=1 duration_ms=1000 rate=2400000 frequency_hz=96100000 sf=0 bw=260000 signal_dbfs=-22.0 noise_dbfs=-90.0 trigger_dbfs=-75.0 sequence=1 trigger_offset_samples=0
+RTL_IQ_DIAG_START transition="gate-baseline" sequence=1 bytes=4800000 rate=2400000 frequency_hz=96100000 started_ms=28723
+RTL_IQ_DONE storage=psram source=diagnostic bytes=4800000 samples=2400000 rate=2400000 frequency_hz=96100000 sf=0 bw=260000 mode=manual sequence=1 capture_ms=1003 trigger_offset_samples=0 drops=0
+RTL_IQ_GET_READY chunk=2048 bytes=4800000
+RTL_IQ_GET_DONE bytes=4800000 sha256=a7626391551ed5e5602134e67ca9df15b11f5096748d1c470736e1c5a7ec67dd
+RTL_IQ_RETRIEVE_DONE
+RTL_DONGLE_GATE_IQ stage=baseline rate=2400000 frequency_hz=96100000 bytes=4800000 sha256=a7626391551ed5e5602134e67ca9df15b11f5096748d1c470736e1c5a7ec67dd path=C:\Users\hardc\.codex\worktrees\v3c-tuner-bw-closeout\OrcSDR\artifacts\rtl-dongle-gate\20260928-172449-v4l-baseline.cu8
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=STREAMING profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=MANUAL gain_tenth_db=27 rtl_agc=0 bias=0 bytes=201162752 blocks=6139 effective_sps=2395079 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=1 route=TUNER bw_requested_hz=0 bw_applied_hz=0
+{"type":"rtl_audio_test","mode":"idle","elapsed_ms":0,"speaker_enabled":1,"speaker_running":1,"sample_rate":48000,"headphone_connected":1,"internal_speaker_muted":1,"stereo":1,"speaker_core":1,"speaker_priority":6,"ring_blocks":3,"ring_overruns":0,"submit_failures":0,"audio_chunks":982,"audio_drops":0,"effective_sps":2394899,"usb_overruns":0,"usb_drops":0,"dsp_block_us_max":7737,"dsp_gate_us":13653,"task_count":24,"task_delta":24,"free_heap":17172132}
+RTL_DRIVER_RESULT action="BW 200000" accepted=1 result=ESP_OK
+RTL_DONGLE_GATE_VISUAL dongle=V4L stage=bw_200000 inspect_spectrum_and_audio=1 seconds=20
+I (63249) esp_rtl_sdr: tune rf=96100000 Hz tuner=96100000 Hz ppm=0 hf_upconv=0 r16=a4/84 r20=4a r21=c7 r22=91 pll_if_hz=2125000
+RTL_SIGNAL_STATUS band=FM frequency_hz=96100000 signal_dbfs_tenths=-285 stereo_locked=1 left_dbfs_tenths=5 right_dbfs_tenths=-7 rds_carrier=1 rds_signal_tenths=-76 pilot_env_thou=3397 clipping_percent=0.000 filter_hz=260000 lo_nudge=0
+RTL_SIGNAL_STATUS band=FM frequency_hz=96100000 signal_dbfs_tenths=-283 stereo_locked=1 left_dbfs_tenths=49 right_dbfs_tenths=41 rds_carrier=1 rds_signal_tenths=-81 pilot_env_thou=3197 clipping_percent=0.000 filter_hz=260000 lo_nudge=0
+RTL_SIGNAL_STATUS band=FM frequency_hz=96100000 signal_dbfs_tenths=-290 stereo_locked=1 left_dbfs_tenths=10 right_dbfs_tenths=3 rds_carrier=1 rds_signal_tenths=-85 pilot_env_thou=3241 clipping_percent=0.000 filter_hz=260000 lo_nudge=0
+RTL_SIGNAL_STATUS band=FM frequency_hz=96100000 signal_dbfs_tenths=-279 stereo_locked=1 left_dbfs_tenths=35 right_dbfs_tenths=28 rds_carrier=1 rds_signal_tenths=-85 pilot_env_thou=3180 clipping_percent=0.000 filter_hz=260000 lo_nudge=0
+PAIR_OK
+AUTH_OK [redacted]
+RTL_UI_SOAK_AUTH verified=1
+{"type":"hello","message_id":"m5tab5_hello_01","protocol_version":{"major":1,"minor":0},"payload":{"adapter":{"id":"m5tab5.serial","version":"0.8.31"},"features":["telemetry","display","touch","authenticated_session","journal","network_inventory","wifi_provisioning","power_telemetry","usb_host","rtl_sdr_probe","rtl_sdr_radio_ui","rtl_sdr_scope_scroll"],"capability_namespaces":["m5tab5"],"config_schema_version":1}}
+{"type":"node_snapshot","message_id":"m5tab5_snapshot_82231","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","connection_state":"online","hardware":{"chip":"esp32p4","revision":103,"cores":2,"flash_bytes":16777216,"psram_bytes":33554432,"free_heap_bytes":17171852,"display":{"width":1280,"height":720,"touch_ready":true}},"network":{"transport":"esp_hosted_sdio","station_ready":true,"configured":true,"scan_result":-1,"connected":true,"ip":"192.168.1.75"},"power":{"source":"m5unified","pmic_detected":false,"pmic_type":0,"battery_level":99,"battery_mv":8184,"battery_ma":2,"vbus_mv":-1,"charging":"unknown"},"journal":{"latest_sequence":1725,"acknowledged_sequence":0,"pending":8,"dropped":1717},"offline_workflow":{"id":"status_on_disconnect","config_revision":0,"runs":0,"max_runs":0},"capabilities":["m5tab5.device.info","m5tab5.health.read","m5tab5.display.status","m5tab5.input.touch","m5tab5.event.journal.sync","m5tab5.network.inventory","m5tab5.network.configure","m5tab5.power.read"]}}
+{"type":"event","message_id":"m5tab5_journal_1718","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1718,"event_kind":"session_online","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1719","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1719,"event_kind":"session_online","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1720","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1720,"event_kind":"session_online","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1721","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1721,"event_kind":"session_online","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1722","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1722,"event_kind":"session_degraded","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1723","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1723,"event_kind":"session_online","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1724","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1724,"event_kind":"boot","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1725","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1725,"event_kind":"session_online","x":-1,"y":-1}}
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=STREAMING profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=MANUAL gain_tenth_db=27 rtl_agc=0 bias=0 bytes=301170688 blocks=9191 effective_sps=2393206 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=1 route=TUNER bw_requested_hz=200000 bw_applied_hz=200000
+{"type":"rtl_audio_test","mode":"idle","elapsed_ms":0,"speaker_enabled":1,"speaker_running":1,"sample_rate":48000,"headphone_connected":1,"internal_speaker_muted":1,"stereo":1,"speaker_core":1,"speaker_priority":6,"ring_blocks":3,"ring_overruns":0,"submit_failures":0,"audio_chunks":1470,"audio_drops":0,"effective_sps":2393086,"usb_overruns":0,"usb_drops":0,"dsp_block_us_max":7587,"dsp_gate_us":13653,"task_count":24,"task_delta":24,"free_heap":17171852}
+RTL_DONGLE_GATE_STAGE stage=bw_200000 serial_pass=1 bw_applied_hz=200000 visual=pending
+RTL_IQ_DIAG_STATUS transition="gate-baseline" sequence=1 active=0 ready=0 bytes=0 max_bytes=4800000 rate=2400000 frequency_hz=96100000 started_ms=28723
+RTL_IQ_START source=diagnostic mode=manual bytes=4800000 seconds=1 duration_ms=1000 rate=2400000 frequency_hz=96100000 sf=0 bw=260000 signal_dbfs=-28.5 noise_dbfs=-90.0 trigger_dbfs=-75.0 sequence=2 trigger_offset_samples=0
+RTL_IQ_DIAG_START transition="gate-bw_200000" sequence=2 bytes=4800000 rate=2400000 frequency_hz=96100000 started_ms=82894
+RTL_IQ_DONE storage=psram source=diagnostic bytes=4800000 samples=2400000 rate=2400000 frequency_hz=96100000 sf=0 bw=260000 mode=manual sequence=2 capture_ms=999 trigger_offset_samples=0 drops=0
+RTL_IQ_GET_READY chunk=2048 bytes=4800000
+RTL_IQ_GET_DONE bytes=4800000 sha256=84e111d0e68226bba31d0663dd3ebc70c0c47956ba1029b1420a6d8c5ef830b4
+RTL_IQ_RETRIEVE_DONE
+RTL_DONGLE_GATE_IQ stage=bw_200000 rate=2400000 frequency_hz=96100000 bytes=4800000 sha256=84e111d0e68226bba31d0663dd3ebc70c0c47956ba1029b1420a6d8c5ef830b4 path=C:\Users\hardc\.codex\worktrees\v3c-tuner-bw-closeout\OrcSDR\artifacts\rtl-dongle-gate\20260928-172449-v4l-bw_200000.cu8
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=STREAMING profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=MANUAL gain_tenth_db=27 rtl_agc=0 bias=0 bytes=459767808 blocks=14031 effective_sps=2395497 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=1 route=TUNER bw_requested_hz=200000 bw_applied_hz=200000
+{"type":"rtl_audio_test","mode":"idle","elapsed_ms":0,"speaker_enabled":1,"speaker_running":1,"sample_rate":48000,"headphone_connected":1,"internal_speaker_muted":1,"stereo":1,"speaker_core":1,"speaker_priority":6,"ring_blocks":3,"ring_overruns":0,"submit_failures":0,"audio_chunks":2245,"audio_drops":0,"effective_sps":2395510,"usb_overruns":0,"usb_drops":0,"dsp_block_us_max":7493,"dsp_gate_us":13653,"task_count":24,"task_delta":24,"free_heap":17171852}
+RTL_DRIVER_RESULT action="BW 300000" accepted=1 result=ESP_OK
+RTL_DONGLE_GATE_VISUAL dongle=V4L stage=bw_300000 inspect_spectrum_and_audio=1 seconds=20
+I (117204) esp_rtl_sdr: tune rf=96100000 Hz tuner=96100000 Hz ppm=0 hf_upconv=0 r16=a4/84 r20=4a r21=c7 r22=91 pll_if_hz=2125000
+RTL_SIGNAL_STATUS band=FM frequency_hz=96100000 signal_dbfs_tenths=-278 stereo_locked=1 left_dbfs_tenths=140 right_dbfs_tenths=131 rds_carrier=1 rds_signal_tenths=-52 pilot_env_thou=3935 clipping_percent=0.000 filter_hz=260000 lo_nudge=0
+RTL_SIGNAL_STATUS band=FM frequency_hz=96100000 signal_dbfs_tenths=-287 stereo_locked=1 left_dbfs_tenths=156 right_dbfs_tenths=148 rds_carrier=1 rds_signal_tenths=-40 pilot_env_thou=4090 clipping_percent=0.000 filter_hz=260000 lo_nudge=0
+RTL_SIGNAL_STATUS band=FM frequency_hz=96100000 signal_dbfs_tenths=-294 stereo_locked=1 left_dbfs_tenths=-28 right_dbfs_tenths=-37 rds_carrier=1 rds_signal_tenths=-87 pilot_env_thou=3846 clipping_percent=0.000 filter_hz=260000 lo_nudge=0
+RTL_SIGNAL_STATUS band=FM frequency_hz=96100000 signal_dbfs_tenths=-290 stereo_locked=1 left_dbfs_tenths=72 right_dbfs_tenths=67 rds_carrier=1 rds_signal_tenths=-58 pilot_env_thou=3728 clipping_percent=0.000 filter_hz=260000 lo_nudge=0
+PAIR_OK
+AUTH_OK [redacted]
+RTL_UI_SOAK_AUTH verified=1
+{"type":"hello","message_id":"m5tab5_hello_01","protocol_version":{"major":1,"minor":0},"payload":{"adapter":{"id":"m5tab5.serial","version":"0.8.31"},"features":["telemetry","display","touch","authenticated_session","journal","network_inventory","wifi_provisioning","power_telemetry","usb_host","rtl_sdr_probe","rtl_sdr_radio_ui","rtl_sdr_scope_scroll"],"capability_namespaces":["m5tab5"],"config_schema_version":1}}
+{"type":"node_snapshot","message_id":"m5tab5_snapshot_136250","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","connection_state":"online","hardware":{"chip":"esp32p4","revision":103,"cores":2,"flash_bytes":16777216,"psram_bytes":33554432,"free_heap_bytes":17171872,"display":{"width":1280,"height":720,"touch_ready":true}},"network":{"transport":"esp_hosted_sdio","station_ready":true,"configured":true,"scan_result":-1,"connected":true,"ip":"192.168.1.75"},"power":{"source":"m5unified","pmic_detected":false,"pmic_type":0,"battery_level":99,"battery_mv":8184,"battery_ma":2,"vbus_mv":-1,"charging":"unknown"},"journal":{"latest_sequence":1726,"acknowledged_sequence":0,"pending":8,"dropped":1718},"offline_workflow":{"id":"status_on_disconnect","config_revision":0,"runs":0,"max_runs":0},"capabilities":["m5tab5.device.info","m5tab5.health.read","m5tab5.display.status","m5tab5.input.touch","m5tab5.event.journal.sync","m5tab5.network.inventory","m5tab5.network.configure","m5tab5.power.read"]}}
+{"type":"event","message_id":"m5tab5_journal_1719","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1719,"event_kind":"session_online","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1720","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1720,"event_kind":"session_online","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1721","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1721,"event_kind":"session_online","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1722","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1722,"event_kind":"session_degraded","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1723","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1723,"event_kind":"session_online","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1724","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1724,"event_kind":"boot","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1725","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1725,"event_kind":"session_online","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1726","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1726,"event_kind":"session_online","x":-1,"y":-1}}
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=STREAMING profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=MANUAL gain_tenth_db=27 rtl_agc=0 bias=0 bytes=560136192 blocks=17094 effective_sps=2394788 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=1 route=TUNER bw_requested_hz=300000 bw_applied_hz=300000
+{"type":"rtl_audio_test","mode":"idle","elapsed_ms":0,"speaker_enabled":1,"speaker_running":1,"sample_rate":48000,"headphone_connected":1,"internal_speaker_muted":1,"stereo":1,"speaker_core":1,"speaker_priority":6,"ring_blocks":3,"ring_overruns":0,"submit_failures":0,"audio_chunks":2735,"audio_drops":0,"effective_sps":2394799,"usb_overruns":0,"usb_drops":0,"dsp_block_us_max":8665,"dsp_gate_us":13653,"task_count":24,"task_delta":24,"free_heap":17171872}
+RTL_DONGLE_GATE_STAGE stage=bw_300000 serial_pass=1 bw_applied_hz=300000 visual=pending
+RTL_IQ_DIAG_STATUS transition="gate-bw_200000" sequence=2 active=0 ready=0 bytes=0 max_bytes=4800000 rate=2400000 frequency_hz=96100000 started_ms=82894
+RTL_IQ_START source=diagnostic mode=manual bytes=4800000 seconds=1 duration_ms=1000 rate=2400000 frequency_hz=96100000 sf=0 bw=260000 signal_dbfs=-29.4 noise_dbfs=-90.0 trigger_dbfs=-75.0 sequence=3 trigger_offset_samples=0
+RTL_IQ_DIAG_START transition="gate-bw_300000" sequence=3 bytes=4800000 rate=2400000 frequency_hz=96100000 started_ms=136920
+RTL_IQ_DONE storage=psram source=diagnostic bytes=4800000 samples=2400000 rate=2400000 frequency_hz=96100000 sf=0 bw=260000 mode=manual sequence=3 capture_ms=1000 trigger_offset_samples=0 drops=0
+RTL_IQ_GET_READY chunk=2048 bytes=4800000
+RTL_IQ_GET_DONE bytes=4800000 sha256=fe45d0d86a6293f76344d7d8b9a0f53f1c36897f921157e25c16d71c96e7fc02
+RTL_IQ_RETRIEVE_DONE
+RTL_DONGLE_GATE_IQ stage=bw_300000 rate=2400000 frequency_hz=96100000 bytes=4800000 sha256=fe45d0d86a6293f76344d7d8b9a0f53f1c36897f921157e25c16d71c96e7fc02 path=C:\Users\hardc\.codex\worktrees\v3c-tuner-bw-closeout\OrcSDR\artifacts\rtl-dongle-gate\20260928-172449-v4l-bw_300000.cu8
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=STREAMING profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=MANUAL gain_tenth_db=27 rtl_agc=0 bias=0 bytes=718864384 blocks=21938 effective_sps=2395879 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=1 route=TUNER bw_requested_hz=300000 bw_applied_hz=300000
+{"type":"rtl_audio_test","mode":"idle","elapsed_ms":0,"speaker_enabled":1,"speaker_running":1,"sample_rate":48000,"headphone_connected":1,"internal_speaker_muted":1,"stereo":1,"speaker_core":1,"speaker_priority":6,"ring_blocks":3,"ring_overruns":0,"submit_failures":0,"audio_chunks":3510,"audio_drops":0,"effective_sps":2395921,"usb_overruns":0,"usb_drops":0,"dsp_block_us_max":6906,"dsp_gate_us":13653,"task_count":24,"task_delta":24,"free_heap":17171872}
+RTL_DRIVER_RESULT action="BW 500000" accepted=1 result=ESP_OK
+RTL_DONGLE_GATE_VISUAL dongle=V4L stage=bw_500000 inspect_spectrum_and_audio=1 seconds=20
+I (171251) esp_rtl_sdr: tune rf=96100000 Hz tuner=96100000 Hz ppm=0 hf_upconv=0 r16=a4/84 r20=4a r21=8e r22=83 pll_if_hz=2025000
+RTL_SIGNAL_STATUS band=FM frequency_hz=96100000 signal_dbfs_tenths=-249 stereo_locked=1 left_dbfs_tenths=127 right_dbfs_tenths=124 rds_carrier=1 rds_signal_tenths=-70 pilot_env_thou=4037 clipping_percent=0.000 filter_hz=260000 lo_nudge=0
+RTL_SIGNAL_STATUS band=FM frequency_hz=96100000 signal_dbfs_tenths=-245 stereo_locked=1 left_dbfs_tenths=85 right_dbfs_tenths=76 rds_carrier=1 rds_signal_tenths=-67 pilot_env_thou=3755 clipping_percent=0.000 filter_hz=260000 lo_nudge=0
+RTL_SIGNAL_STATUS band=FM frequency_hz=96100000 signal_dbfs_tenths=-246 stereo_locked=1 left_dbfs_tenths=138 right_dbfs_tenths=130 rds_carrier=1 rds_signal_tenths=-63 pilot_env_thou=3986 clipping_percent=0.000 filter_hz=260000 lo_nudge=0
+RTL_SIGNAL_STATUS band=FM frequency_hz=96100000 signal_dbfs_tenths=-243 stereo_locked=1 left_dbfs_tenths=146 right_dbfs_tenths=138 rds_carrier=1 rds_signal_tenths=-67 pilot_env_thou=3658 clipping_percent=0.000 filter_hz=260000 lo_nudge=0
+PAIR_OK
+AUTH_OK [redacted]
+RTL_UI_SOAK_AUTH verified=1
+{"type":"hello","message_id":"m5tab5_hello_01","protocol_version":{"major":1,"minor":0},"payload":{"adapter":{"id":"m5tab5.serial","version":"0.8.31"},"features":["telemetry","display","touch","authenticated_session","journal","network_inventory","wifi_provisioning","power_telemetry","usb_host","rtl_sdr_probe","rtl_sdr_radio_ui","rtl_sdr_scope_scroll"],"capability_namespaces":["m5tab5"],"config_schema_version":1}}
+{"type":"node_snapshot","message_id":"m5tab5_snapshot_190296","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","connection_state":"online","hardware":{"chip":"esp32p4","revision":103,"cores":2,"flash_bytes":16777216,"psram_bytes":33554432,"free_heap_bytes":17171872,"display":{"width":1280,"height":720,"touch_ready":true}},"network":{"transport":"esp_hosted_sdio","station_ready":true,"configured":true,"scan_result":-1,"connected":true,"ip":"192.168.1.75"},"power":{"source":"m5unified","pmic_detected":false,"pmic_type":0,"battery_level":99,"battery_mv":8184,"battery_ma":2,"vbus_mv":-1,"charging":"unknown"},"journal":{"latest_sequence":1727,"acknowledged_sequence":0,"pending":8,"dropped":1719},"offline_workflow":{"id":"status_on_disconnect","config_revision":0,"runs":0,"max_runs":0},"capabilities":["m5tab5.device.info","m5tab5.health.read","m5tab5.display.status","m5tab5.input.touch","m5tab5.event.journal.sync","m5tab5.network.inventory","m5tab5.network.configure","m5tab5.power.read"]}}
+{"type":"event","message_id":"m5tab5_journal_1720","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1720,"event_kind":"session_online","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1721","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1721,"event_kind":"session_online","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1722","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1722,"event_kind":"session_degraded","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1723","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1723,"event_kind":"session_online","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1724","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1724,"event_kind":"boot","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1725","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1725,"event_kind":"session_online","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1726","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1726,"event_kind":"session_online","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1727","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1727,"event_kind":"session_online","x":-1,"y":-1}}
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=STREAMING profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=MANUAL gain_tenth_db=27 rtl_agc=0 bias=0 bytes=819134464 blocks=24998 effective_sps=2395326 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=1 route=TUNER bw_requested_hz=500000 bw_applied_hz=500000
+{"type":"rtl_audio_test","mode":"idle","elapsed_ms":0,"speaker_enabled":1,"speaker_running":1,"sample_rate":48000,"headphone_connected":1,"internal_speaker_muted":1,"stereo":1,"speaker_core":1,"speaker_priority":6,"ring_blocks":3,"ring_overruns":0,"submit_failures":0,"audio_chunks":3999,"audio_drops":0,"effective_sps":2395281,"usb_overruns":0,"usb_drops":0,"dsp_block_us_max":8629,"dsp_gate_us":13653,"task_count":24,"task_delta":24,"free_heap":17171872}
+RTL_DONGLE_GATE_STAGE stage=bw_500000 serial_pass=1 bw_applied_hz=500000 visual=pending
+RTL_IQ_DIAG_STATUS transition="gate-bw_300000" sequence=3 active=0 ready=0 bytes=0 max_bytes=4800000 rate=2400000 frequency_hz=96100000 started_ms=136920
+RTL_IQ_START source=diagnostic mode=manual bytes=4800000 seconds=1 duration_ms=1000 rate=2400000 frequency_hz=96100000 sf=0 bw=260000 signal_dbfs=-24.2 noise_dbfs=-90.0 trigger_dbfs=-75.0 sequence=4 trigger_offset_samples=0
+RTL_IQ_DIAG_START transition="gate-bw_500000" sequence=4 bytes=4800000 rate=2400000 frequency_hz=96100000 started_ms=190948
+RTL_IQ_DONE storage=psram source=diagnostic bytes=4800000 samples=2400000 rate=2400000 frequency_hz=96100000 sf=0 bw=260000 mode=manual sequence=4 capture_ms=1005 trigger_offset_samples=0 drops=0
+RTL_IQ_GET_READY chunk=2048 bytes=4800000
+RTL_IQ_GET_DONE bytes=4800000 sha256=bb58df611f916afb13ab17e4c0334c873cf745bf6a1360c75dd333705ec47f39
+RTL_IQ_RETRIEVE_DONE
+RTL_DONGLE_GATE_IQ stage=bw_500000 rate=2400000 frequency_hz=96100000 bytes=4800000 sha256=bb58df611f916afb13ab17e4c0334c873cf745bf6a1360c75dd333705ec47f39 path=C:\Users\hardc\.codex\worktrees\v3c-tuner-bw-closeout\OrcSDR\artifacts\rtl-dongle-gate\20260928-172449-v4l-bw_500000.cu8
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=STREAMING profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=MANUAL gain_tenth_db=27 rtl_agc=0 bias=0 bytes=977534976 blocks=29832 effective_sps=2396060 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=1 route=TUNER bw_requested_hz=500000 bw_applied_hz=500000
+{"type":"rtl_audio_test","mode":"idle","elapsed_ms":0,"speaker_enabled":1,"speaker_running":1,"sample_rate":48000,"headphone_connected":1,"internal_speaker_muted":1,"stereo":1,"speaker_core":1,"speaker_priority":6,"ring_blocks":3,"ring_overruns":0,"submit_failures":0,"audio_chunks":4773,"audio_drops":0,"effective_sps":2396022,"usb_overruns":0,"usb_drops":0,"dsp_block_us_max":6469,"dsp_gate_us":13653,"task_count":24,"task_delta":24,"free_heap":17171872}
+RTL_DRIVER_RESULT action="BW 1000000" accepted=1 result=ESP_OK
+RTL_DONGLE_GATE_VISUAL dongle=V4L stage=bw_1000000 inspect_spectrum_and_audio=1 seconds=20
+I (225220) esp_rtl_sdr: tune rf=96100000 Hz tuner=96100000 Hz ppm=0 hf_upconv=0 r16=a4/84 r20=4a r21=55 r22=55 pll_if_hz=1700000
+RTL_SIGNAL_STATUS band=FM frequency_hz=96100000 signal_dbfs_tenths=-240 stereo_locked=1 left_dbfs_tenths=-30 right_dbfs_tenths=-55 rds_carrier=1 rds_signal_tenths=-96 pilot_env_thou=3249 clipping_percent=0.000 filter_hz=260000 lo_nudge=0
+RTL_SIGNAL_STATUS band=FM frequency_hz=96100000 signal_dbfs_tenths=-236 stereo_locked=1 left_dbfs_tenths=126 right_dbfs_tenths=119 rds_carrier=1 rds_signal_tenths=-84 pilot_env_thou=3602 clipping_percent=0.000 filter_hz=260000 lo_nudge=0
+RTL_SIGNAL_STATUS band=FM frequency_hz=96100000 signal_dbfs_tenths=-241 stereo_locked=1 left_dbfs_tenths=-169 right_dbfs_tenths=-168 rds_carrier=1 rds_signal_tenths=-92 pilot_env_thou=4306 clipping_percent=0.000 filter_hz=260000 lo_nudge=0
+RTL_SIGNAL_STATUS band=FM frequency_hz=96100000 signal_dbfs_tenths=-233 stereo_locked=1 left_dbfs_tenths=93 right_dbfs_tenths=81 rds_carrier=1 rds_signal_tenths=-64 pilot_env_thou=3624 clipping_percent=0.000 filter_hz=260000 lo_nudge=0
+PAIR_OK
+AUTH_OK [redacted]
+RTL_UI_SOAK_AUTH verified=1
+{"type":"hello","message_id":"m5tab5_hello_01","protocol_version":{"major":1,"minor":0},"payload":{"adapter":{"id":"m5tab5.serial","version":"0.8.31"},"features":["telemetry","display","touch","authenticated_session","journal","network_inventory","wifi_provisioning","power_telemetry","usb_host","rtl_sdr_probe","rtl_sdr_radio_ui","rtl_sdr_scope_scroll"],"capability_namespaces":["m5tab5"],"config_schema_version":1}}
+{"type":"node_snapshot","message_id":"m5tab5_snapshot_244262","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","connection_state":"online","hardware":{"chip":"esp32p4","revision":103,"cores":2,"flash_bytes":16777216,"psram_bytes":33554432,"free_heap_bytes":17171872,"display":{"width":1280,"height":720,"touch_ready":true}},"network":{"transport":"esp_hosted_sdio","station_ready":true,"configured":true,"scan_result":-1,"connected":true,"ip":"192.168.1.75"},"power":{"source":"m5unified","pmic_detected":false,"pmic_type":0,"battery_level":99,"battery_mv":8184,"battery_ma":2,"vbus_mv":-1,"charging":"unknown"},"journal":{"latest_sequence":1728,"acknowledged_sequence":0,"pending":8,"dropped":1720},"offline_workflow":{"id":"status_on_disconnect","config_revision":0,"runs":0,"max_runs":0},"capabilities":["m5tab5.device.info","m5tab5.health.read","m5tab5.display.status","m5tab5.input.touch","m5tab5.event.journal.sync","m5tab5.network.inventory","m5tab5.network.configure","m5tab5.power.read"]}}
+{"type":"event","message_id":"m5tab5_journal_1721","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1721,"event_kind":"session_online","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1722","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1722,"event_kind":"session_degraded","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1723","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1723,"event_kind":"session_online","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1724","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1724,"event_kind":"boot","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1725","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1725,"event_kind":"session_online","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1726","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1726,"event_kind":"session_online","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1727","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1727,"event_kind":"session_online","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1728","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1728,"event_kind":"session_online","x":-1,"y":-1}}
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=STREAMING profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=MANUAL gain_tenth_db=27 rtl_agc=0 bias=0 bytes=1077772288 blocks=32891 effective_sps=2395571 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=1 route=TUNER bw_requested_hz=1000000 bw_applied_hz=1000000
+{"type":"rtl_audio_test","mode":"idle","elapsed_ms":0,"speaker_enabled":1,"speaker_running":1,"sample_rate":48000,"headphone_connected":1,"internal_speaker_muted":1,"stereo":1,"speaker_core":1,"speaker_priority":6,"ring_blocks":3,"ring_overruns":0,"submit_failures":0,"audio_chunks":5262,"audio_drops":0,"effective_sps":2395610,"usb_overruns":0,"usb_drops":0,"dsp_block_us_max":7698,"dsp_gate_us":13653,"task_count":24,"task_delta":24,"free_heap":17171872}
+RTL_DONGLE_GATE_STAGE stage=bw_1000000 serial_pass=1 bw_applied_hz=1000000 visual=pending
+RTL_IQ_DIAG_STATUS transition="gate-bw_500000" sequence=4 active=0 ready=0 bytes=0 max_bytes=4800000 rate=2400000 frequency_hz=96100000 started_ms=190948
+RTL_IQ_START source=diagnostic mode=manual bytes=4800000 seconds=1 duration_ms=1000 rate=2400000 frequency_hz=96100000 sf=0 bw=260000 signal_dbfs=-23.3 noise_dbfs=-90.0 trigger_dbfs=-75.0 sequence=5 trigger_offset_samples=0
+RTL_IQ_DIAG_START transition="gate-bw_1000000" sequence=5 bytes=4800000 rate=2400000 frequency_hz=96100000 started_ms=244913
+RTL_IQ_DONE storage=psram source=diagnostic bytes=4800000 samples=2400000 rate=2400000 frequency_hz=96100000 sf=0 bw=260000 mode=manual sequence=5 capture_ms=999 trigger_offset_samples=0 drops=0
+RTL_IQ_GET_READY chunk=2048 bytes=4800000
+RTL_IQ_GET_DONE bytes=4800000 sha256=a6d7caec153b25e7edcfb856b5ec1b7e1a6a6f93926beb3e79f63018eeafe5cf
+RTL_IQ_RETRIEVE_DONE
+RTL_DONGLE_GATE_IQ stage=bw_1000000 rate=2400000 frequency_hz=96100000 bytes=4800000 sha256=a6d7caec153b25e7edcfb856b5ec1b7e1a6a6f93926beb3e79f63018eeafe5cf path=C:\Users\hardc\.codex\worktrees\v3c-tuner-bw-closeout\OrcSDR\artifacts\rtl-dongle-gate\20260928-172449-v4l-bw_1000000.cu8
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=STREAMING profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=MANUAL gain_tenth_db=27 rtl_agc=0 bias=0 bytes=1236500480 blocks=37735 effective_sps=2396133 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=1 route=TUNER bw_requested_hz=1000000 bw_applied_hz=1000000
+{"type":"rtl_audio_test","mode":"idle","elapsed_ms":0,"speaker_enabled":1,"speaker_running":1,"sample_rate":48000,"headphone_connected":1,"internal_speaker_muted":1,"stereo":1,"speaker_core":1,"speaker_priority":6,"ring_blocks":3,"ring_overruns":0,"submit_failures":0,"audio_chunks":6038,"audio_drops":0,"effective_sps":2396125,"usb_overruns":0,"usb_drops":0,"dsp_block_us_max":7276,"dsp_gate_us":13653,"task_count":24,"task_delta":24,"free_heap":17171872}
+RTL_DRIVER_RESULT action="BW 1800000" accepted=1 result=ESP_OK
+RTL_DONGLE_GATE_VISUAL dongle=V4L stage=bw_1800000 inspect_spectrum_and_audio=1 seconds=20
+I (279278) esp_rtl_sdr: tune rf=96100000 Hz tuner=96100000 Hz ppm=0 hf_upconv=0 r16=a4/84 r20=4a r21=72 r22=5c pll_if_hz=1750000
+RTL_SIGNAL_STATUS band=FM frequency_hz=96100000 signal_dbfs_tenths=-233 stereo_locked=1 left_dbfs_tenths=-168 right_dbfs_tenths=-165 rds_carrier=1 rds_signal_tenths=-92 pilot_env_thou=4254 clipping_percent=0.000 filter_hz=260000 lo_nudge=0
+RTL_SIGNAL_STATUS band=FM frequency_hz=96100000 signal_dbfs_tenths=-231 stereo_locked=1 left_dbfs_tenths=164 right_dbfs_tenths=157 rds_carrier=1 rds_signal_tenths=-70 pilot_env_thou=3487 clipping_percent=0.000 filter_hz=260000 lo_nudge=0
+RTL_SIGNAL_STATUS band=FM frequency_hz=96100000 signal_dbfs_tenths=-230 stereo_locked=1 left_dbfs_tenths=107 right_dbfs_tenths=94 rds_carrier=1 rds_signal_tenths=-50 pilot_env_thou=4116 clipping_percent=0.000 filter_hz=260000 lo_nudge=0
+RTL_SIGNAL_STATUS band=FM frequency_hz=96100000 signal_dbfs_tenths=-229 stereo_locked=1 left_dbfs_tenths=95 right_dbfs_tenths=83 rds_carrier=1 rds_signal_tenths=-63 pilot_env_thou=3585 clipping_percent=0.000 filter_hz=260000 lo_nudge=0
+PAIR_OK
+AUTH_OK [redacted]
+RTL_UI_SOAK_AUTH verified=1
+{"type":"hello","message_id":"m5tab5_hello_01","protocol_version":{"major":1,"minor":0},"payload":{"adapter":{"id":"m5tab5.serial","version":"0.8.31"},"features":["telemetry","display","touch","authenticated_session","journal","network_inventory","wifi_provisioning","power_telemetry","usb_host","rtl_sdr_probe","rtl_sdr_radio_ui","rtl_sdr_scope_scroll"],"capability_namespaces":["m5tab5"],"config_schema_version":1}}
+{"type":"node_snapshot","message_id":"m5tab5_snapshot_298293","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","connection_state":"online","hardware":{"chip":"esp32p4","revision":103,"cores":2,"flash_bytes":16777216,"psram_bytes":33554432,"free_heap_bytes":17171872,"display":{"width":1280,"height":720,"touch_ready":true}},"network":{"transport":"esp_hosted_sdio","station_ready":true,"configured":true,"scan_result":-1,"connected":true,"ip":"192.168.1.75"},"power":{"source":"m5unified","pmic_detected":false,"pmic_type":0,"battery_level":99,"battery_mv":8184,"battery_ma":2,"vbus_mv":-1,"charging":"unknown"},"journal":{"latest_sequence":1729,"acknowledged_sequence":0,"pending":8,"dropped":1721},"offline_workflow":{"id":"status_on_disconnect","config_revision":0,"runs":0,"max_runs":0},"capabilities":["m5tab5.device.info","m5tab5.health.read","m5tab5.display.status","m5tab5.input.touch","m5tab5.event.journal.sync","m5tab5.network.inventory","m5tab5.network.configure","m5tab5.power.read"]}}
+{"type":"event","message_id":"m5tab5_journal_1722","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1722,"event_kind":"session_degraded","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1723","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1723,"event_kind":"session_online","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1724","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1724,"event_kind":"boot","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1725","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1725,"event_kind":"session_online","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1726","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1726,"event_kind":"session_online","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1727","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1727,"event_kind":"session_online","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1728","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1728,"event_kind":"session_online","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1729","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1729,"event_kind":"session_online","x":-1,"y":-1}}
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=STREAMING profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=MANUAL gain_tenth_db=27 rtl_agc=0 bias=0 bytes=1336737792 blocks=40794 effective_sps=2395750 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=1 route=TUNER bw_requested_hz=1800000 bw_applied_hz=1800000
+{"type":"rtl_audio_test","mode":"idle","elapsed_ms":0,"speaker_enabled":1,"speaker_running":1,"sample_rate":48000,"headphone_connected":1,"internal_speaker_muted":1,"stereo":1,"speaker_core":1,"speaker_priority":6,"ring_blocks":3,"ring_overruns":0,"submit_failures":0,"audio_chunks":6527,"audio_drops":0,"effective_sps":2395773,"usb_overruns":0,"usb_drops":0,"dsp_block_us_max":7301,"dsp_gate_us":13653,"task_count":24,"task_delta":24,"free_heap":17171872}
+RTL_DONGLE_GATE_STAGE stage=bw_1800000 serial_pass=1 bw_applied_hz=1800000 visual=pending
+RTL_IQ_DIAG_STATUS transition="gate-bw_1000000" sequence=5 active=0 ready=0 bytes=0 max_bytes=4800000 rate=2400000 frequency_hz=96100000 started_ms=244913
+RTL_IQ_START source=diagnostic mode=manual bytes=4800000 seconds=1 duration_ms=1000 rate=2400000 frequency_hz=96100000 sf=0 bw=260000 signal_dbfs=-23.0 noise_dbfs=-90.0 trigger_dbfs=-75.0 sequence=6 trigger_offset_samples=0
+RTL_IQ_DIAG_START transition="gate-bw_1800000" sequence=6 bytes=4800000 rate=2400000 frequency_hz=96100000 started_ms=298944
+RTL_IQ_DONE storage=psram source=diagnostic bytes=4800000 samples=2400000 rate=2400000 frequency_hz=96100000 sf=0 bw=260000 mode=manual sequence=6 capture_ms=1001 trigger_offset_samples=0 drops=0
+RTL_IQ_GET_READY chunk=2048 bytes=4800000
+RTL_IQ_GET_DONE bytes=4800000 sha256=1369e1587fa2a8330b38b3cdc540e0e0c4b2f9c0c526592c672f0082d907f91a
+RTL_IQ_RETRIEVE_DONE
+RTL_DONGLE_GATE_IQ stage=bw_1800000 rate=2400000 frequency_hz=96100000 bytes=4800000 sha256=1369e1587fa2a8330b38b3cdc540e0e0c4b2f9c0c526592c672f0082d907f91a path=C:\Users\hardc\.codex\worktrees\v3c-tuner-bw-closeout\OrcSDR\artifacts\rtl-dongle-gate\20260928-172449-v4l-bw_1800000.cu8
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=STREAMING profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=MANUAL gain_tenth_db=27 rtl_agc=0 bias=0 bytes=1496186880 blocks=45660 effective_sps=2396184 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=1 route=TUNER bw_requested_hz=1800000 bw_applied_hz=1800000
+{"type":"rtl_audio_test","mode":"idle","elapsed_ms":0,"speaker_enabled":1,"speaker_running":1,"sample_rate":48000,"headphone_connected":1,"internal_speaker_muted":1,"stereo":1,"speaker_core":1,"speaker_priority":6,"ring_blocks":3,"ring_overruns":0,"submit_failures":0,"audio_chunks":7305,"audio_drops":0,"effective_sps":2396204,"usb_overruns":0,"usb_drops":0,"dsp_block_us_max":6830,"dsp_gate_us":13653,"task_count":24,"task_delta":24,"free_heap":17171872}
+RTL_DRIVER_RESULT action="BW 2400000" accepted=1 result=ESP_OK
+RTL_DONGLE_GATE_VISUAL dongle=V4L stage=bw_2400000 inspect_spectrum_and_audio=1 seconds=20
+I (333433) esp_rtl_sdr: tune rf=96100000 Hz tuner=96100000 Hz ppm=0 hf_upconv=0 r16=a4/84 r20=4a r21=af r22=65 pll_if_hz=1814972
+RTL_SIGNAL_STATUS band=FM frequency_hz=96100000 signal_dbfs_tenths=-227 stereo_locked=1 left_dbfs_tenths=87 right_dbfs_tenths=75 rds_carrier=1 rds_signal_tenths=-61 pilot_env_thou=3644 clipping_percent=0.000 filter_hz=260000 lo_nudge=0
+RTL_SIGNAL_STATUS band=FM frequency_hz=96100000 signal_dbfs_tenths=-227 stereo_locked=1 left_dbfs_tenths=127 right_dbfs_tenths=120 rds_carrier=1 rds_signal_tenths=-74 pilot_env_thou=3350 clipping_percent=0.000 filter_hz=260000 lo_nudge=0
+RTL_SIGNAL_STATUS band=FM frequency_hz=96100000 signal_dbfs_tenths=-226 stereo_locked=1 left_dbfs_tenths=99 right_dbfs_tenths=87 rds_carrier=1 rds_signal_tenths=-38 pilot_env_thou=4354 clipping_percent=0.000 filter_hz=260000 lo_nudge=0
+RTL_SIGNAL_STATUS band=FM frequency_hz=96100000 signal_dbfs_tenths=-226 stereo_locked=1 left_dbfs_tenths=134 right_dbfs_tenths=126 rds_carrier=1 rds_signal_tenths=-51 pilot_env_thou=3842 clipping_percent=0.000 filter_hz=260000 lo_nudge=0
+PAIR_OK
+AUTH_OK [redacted]
+RTL_UI_SOAK_AUTH verified=1
+{"type":"hello","message_id":"m5tab5_hello_01","protocol_version":{"major":1,"minor":0},"payload":{"adapter":{"id":"m5tab5.serial","version":"0.8.31"},"features":["telemetry","display","touch","authenticated_session","journal","network_inventory","wifi_provisioning","power_telemetry","usb_host","rtl_sdr_probe","rtl_sdr_radio_ui","rtl_sdr_scope_scroll"],"capability_namespaces":["m5tab5"],"config_schema_version":1}}
+{"type":"node_snapshot","message_id":"m5tab5_snapshot_352443","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","connection_state":"online","hardware":{"chip":"esp32p4","revision":103,"cores":2,"flash_bytes":16777216,"psram_bytes":33554432,"free_heap_bytes":17171872,"display":{"width":1280,"height":720,"touch_ready":true}},"network":{"transport":"esp_hosted_sdio","station_ready":true,"configured":true,"scan_result":-1,"connected":true,"ip":"192.168.1.75"},"power":{"source":"m5unified","pmic_detected":false,"pmic_type":0,"battery_level":99,"battery_mv":8184,"battery_ma":2,"vbus_mv":-1,"charging":"unknown"},"journal":{"latest_sequence":1730,"acknowledged_sequence":0,"pending":8,"dropped":1722},"offline_workflow":{"id":"status_on_disconnect","config_revision":0,"runs":0,"max_runs":0},"capabilities":["m5tab5.device.info","m5tab5.health.read","m5tab5.display.status","m5tab5.input.touch","m5tab5.event.journal.sync","m5tab5.network.inventory","m5tab5.network.configure","m5tab5.power.read"]}}
+{"type":"event","message_id":"m5tab5_journal_1723","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1723,"event_kind":"session_online","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1724","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1724,"event_kind":"boot","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1725","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1725,"event_kind":"session_online","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1726","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1726,"event_kind":"session_online","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1727","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1727,"event_kind":"session_online","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1728","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1728,"event_kind":"session_online","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1729","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1729,"event_kind":"session_online","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1730","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1730,"event_kind":"session_online","x":-1,"y":-1}}
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=STREAMING profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=MANUAL gain_tenth_db=27 rtl_agc=0 bias=0 bytes=1596358656 blocks=48717 effective_sps=2395877 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=1 route=TUNER bw_requested_hz=2400000 bw_applied_hz=2400000
+{"type":"rtl_audio_test","mode":"idle","elapsed_ms":0,"speaker_enabled":1,"speaker_running":1,"sample_rate":48000,"headphone_connected":1,"internal_speaker_muted":1,"stereo":1,"speaker_core":1,"speaker_priority":6,"ring_blocks":3,"ring_overruns":0,"submit_failures":0,"audio_chunks":7794,"audio_drops":0,"effective_sps":2395854,"usb_overruns":0,"usb_drops":0,"dsp_block_us_max":6892,"dsp_gate_us":13653,"task_count":24,"task_delta":24,"free_heap":17171872}
+RTL_DONGLE_GATE_STAGE stage=bw_2400000 serial_pass=1 bw_applied_hz=2400000 visual=pending
+RTL_IQ_DIAG_STATUS transition="gate-bw_1800000" sequence=6 active=0 ready=0 bytes=0 max_bytes=4800000 rate=2400000 frequency_hz=96100000 started_ms=298944
+RTL_IQ_START source=diagnostic mode=manual bytes=4800000 seconds=1 duration_ms=1000 rate=2400000 frequency_hz=96100000 sf=0 bw=260000 signal_dbfs=-22.7 noise_dbfs=-90.0 trigger_dbfs=-75.0 sequence=7 trigger_offset_samples=0
+RTL_IQ_DIAG_START transition="gate-bw_2400000" sequence=7 bytes=4800000 rate=2400000 frequency_hz=96100000 started_ms=353123
+RTL_IQ_DONE storage=psram source=diagnostic bytes=4800000 samples=2400000 rate=2400000 frequency_hz=96100000 sf=0 bw=260000 mode=manual sequence=7 capture_ms=1002 trigger_offset_samples=0 drops=0
+RTL_IQ_GET_READY chunk=2048 bytes=4800000
+RTL_IQ_GET_DONE bytes=4800000 sha256=4e097ac0c4b162ac3ee3bd689ef5abab0f1ee6e3afc80937e24530776fe2d888
+RTL_IQ_RETRIEVE_DONE
+RTL_DONGLE_GATE_IQ stage=bw_2400000 rate=2400000 frequency_hz=96100000 bytes=4800000 sha256=4e097ac0c4b162ac3ee3bd689ef5abab0f1ee6e3afc80937e24530776fe2d888 path=C:\Users\hardc\.codex\worktrees\v3c-tuner-bw-closeout\OrcSDR\artifacts\rtl-dongle-gate\20260928-172449-v4l-bw_2400000.cu8
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=STREAMING profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=MANUAL gain_tenth_db=27 rtl_agc=0 bias=0 bytes=1755348992 blocks=53569 effective_sps=2396230 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=1 route=TUNER bw_requested_hz=2400000 bw_applied_hz=2400000
+{"type":"rtl_audio_test","mode":"idle","elapsed_ms":0,"speaker_enabled":1,"speaker_running":1,"sample_rate":48000,"headphone_connected":1,"internal_speaker_muted":1,"stereo":1,"speaker_core":1,"speaker_priority":6,"ring_blocks":3,"ring_overruns":0,"submit_failures":0,"audio_chunks":8571,"audio_drops":0,"effective_sps":2396225,"usb_overruns":0,"usb_drops":0,"dsp_block_us_max":6250,"dsp_gate_us":13653,"task_count":24,"task_delta":24,"free_heap":17171872}
+RTL_DRIVER_RESULT action="BW 0" accepted=1 result=ESP_OK
+RTL_DONGLE_GATE_VISUAL dongle=V4L stage=bw_0 inspect_spectrum_and_audio=1 seconds=20
+I (387531) esp_rtl_sdr: tune rf=96100000 Hz tuner=96100000 Hz ppm=0 hf_upconv=0 r16=a4/84 r20=4a r21=af r22=65 pll_if_hz=1814972
+RTL_SIGNAL_STATUS band=FM frequency_hz=96100000 signal_dbfs_tenths=-224 stereo_locked=1 left_dbfs_tenths=70 right_dbfs_tenths=58 rds_carrier=1 rds_signal_tenths=-70 pilot_env_thou=3572 clipping_percent=0.000 filter_hz=260000 lo_nudge=0
+RTL_SIGNAL_STATUS band=FM frequency_hz=96100000 signal_dbfs_tenths=-229 stereo_locked=1 left_dbfs_tenths=168 right_dbfs_tenths=161 rds_carrier=1 rds_signal_tenths=-79 pilot_env_thou=3414 clipping_percent=0.000 filter_hz=260000 lo_nudge=0
+RTL_SIGNAL_STATUS band=FM frequency_hz=96100000 signal_dbfs_tenths=-228 stereo_locked=1 left_dbfs_tenths=34 right_dbfs_tenths=29 rds_carrier=1 rds_signal_tenths=-79 pilot_env_thou=3312 clipping_percent=0.000 filter_hz=260000 lo_nudge=0
+RTL_SIGNAL_STATUS band=FM frequency_hz=96100000 signal_dbfs_tenths=-227 stereo_locked=1 left_dbfs_tenths=122 right_dbfs_tenths=115 rds_carrier=1 rds_signal_tenths=-76 pilot_env_thou=3421 clipping_percent=0.000 filter_hz=260000 lo_nudge=0
+PAIR_OK
+AUTH_OK [redacted]
+RTL_UI_SOAK_AUTH verified=1
+{"type":"hello","message_id":"m5tab5_hello_01","protocol_version":{"major":1,"minor":0},"payload":{"adapter":{"id":"m5tab5.serial","version":"0.8.31"},"features":["telemetry","display","touch","authenticated_session","journal","network_inventory","wifi_provisioning","power_telemetry","usb_host","rtl_sdr_probe","rtl_sdr_radio_ui","rtl_sdr_scope_scroll"],"capability_namespaces":["m5tab5"],"config_schema_version":1}}
+{"type":"node_snapshot","message_id":"m5tab5_snapshot_406530","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","connection_state":"online","hardware":{"chip":"esp32p4","revision":103,"cores":2,"flash_bytes":16777216,"psram_bytes":33554432,"free_heap_bytes":17171872,"display":{"width":1280,"height":720,"touch_ready":true}},"network":{"transport":"esp_hosted_sdio","station_ready":true,"configured":true,"scan_result":-1,"connected":true,"ip":"192.168.1.75"},"power":{"source":"m5unified","pmic_detected":false,"pmic_type":0,"battery_level":99,"battery_mv":8184,"battery_ma":2,"vbus_mv":-1,"charging":"unknown"},"journal":{"latest_sequence":1731,"acknowledged_sequence":0,"pending":8,"dropped":1723},"offline_workflow":{"id":"status_on_disconnect","config_revision":0,"runs":0,"max_runs":0},"capabilities":["m5tab5.device.info","m5tab5.health.read","m5tab5.display.status","m5tab5.input.touch","m5tab5.event.journal.sync","m5tab5.network.inventory","m5tab5.network.configure","m5tab5.power.read"]}}
+{"type":"event","message_id":"m5tab5_journal_1724","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1724,"event_kind":"boot","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1725","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1725,"event_kind":"session_online","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1726","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1726,"event_kind":"session_online","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1727","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1727,"event_kind":"session_online","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1728","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1728,"event_kind":"session_online","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1729","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1729,"event_kind":"session_online","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1730","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1730,"event_kind":"session_online","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1731","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1731,"event_kind":"session_online","x":-1,"y":-1}}
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=STREAMING profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=MANUAL gain_tenth_db=27 rtl_agc=0 bias=0 bytes=1855586304 blocks=56628 effective_sps=2395986 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=1 route=TUNER bw_requested_hz=0 bw_applied_hz=0
+{"type":"rtl_audio_test","mode":"idle","elapsed_ms":0,"speaker_enabled":1,"speaker_running":1,"sample_rate":48000,"headphone_connected":1,"internal_speaker_muted":1,"stereo":1,"speaker_core":1,"speaker_priority":6,"ring_blocks":3,"ring_overruns":0,"submit_failures":0,"audio_chunks":9060,"audio_drops":0,"effective_sps":2395967,"usb_overruns":0,"usb_drops":0,"dsp_block_us_max":8021,"dsp_gate_us":13653,"task_count":24,"task_delta":24,"free_heap":17171872}
+RTL_DONGLE_GATE_STAGE stage=bw_0 serial_pass=1 bw_applied_hz=0 visual=pending
+RTL_IQ_DIAG_STATUS transition="gate-bw_2400000" sequence=7 active=0 ready=0 bytes=0 max_bytes=4800000 rate=2400000 frequency_hz=96100000 started_ms=353123
+RTL_IQ_START source=diagnostic mode=manual bytes=4800000 seconds=1 duration_ms=1000 rate=2400000 frequency_hz=96100000 sf=0 bw=260000 signal_dbfs=-22.5 noise_dbfs=-90.0 trigger_dbfs=-75.0 sequence=8 trigger_offset_samples=0
+RTL_IQ_DIAG_START transition="gate-bw_0" sequence=8 bytes=4800000 rate=2400000 frequency_hz=96100000 started_ms=407189
+RTL_IQ_DONE storage=psram source=diagnostic bytes=4800000 samples=2400000 rate=2400000 frequency_hz=96100000 sf=0 bw=260000 mode=manual sequence=8 capture_ms=1003 trigger_offset_samples=0 drops=0
+RTL_IQ_GET_READY chunk=2048 bytes=4800000
+RTL_IQ_GET_DONE bytes=4800000 sha256=6b9e43f32adc6449fe83da09280dd2d1548a8226b3473c202ededa3455457ca4
+RTL_IQ_RETRIEVE_DONE
+RTL_DONGLE_GATE_IQ stage=bw_0 rate=2400000 frequency_hz=96100000 bytes=4800000 sha256=6b9e43f32adc6449fe83da09280dd2d1548a8226b3473c202ededa3455457ca4 path=C:\Users\hardc\.codex\worktrees\v3c-tuner-bw-closeout\OrcSDR\artifacts\rtl-dongle-gate\20260928-172449-v4l-bw_0.cu8
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=STREAMING profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=MANUAL gain_tenth_db=27 rtl_agc=0 bias=0 bytes=2014511104 blocks=61478 effective_sps=2396299 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=1 route=TUNER bw_requested_hz=0 bw_applied_hz=0
+{"type":"rtl_audio_test","mode":"idle","elapsed_ms":0,"speaker_enabled":1,"speaker_running":1,"sample_rate":48000,"headphone_connected":1,"internal_speaker_muted":1,"stereo":1,"speaker_core":1,"speaker_priority":6,"ring_blocks":3,"ring_overruns":0,"submit_failures":0,"audio_chunks":9836,"audio_drops":0,"effective_sps":2396281,"usb_overruns":0,"usb_drops":0,"dsp_block_us_max":7328,"dsp_gate_us":13653,"task_count":24,"task_delta":24,"free_heap":17171872}
+RTL_FM_SAVE frequency_hz=96200000
+RTL_FREQ_OK band=FM frequency_hz=96200000
+I (441598) esp_rtl_sdr: tune rf=96200000 Hz tuner=96200000 Hz ppm=0 hf_upconv=0 r16=a4/84 r20=4a r21=e8 r22=73 pll_if_hz=1814972
+I (441642) esp_rtl_sdr: hot retune applied rf=96200000 Hz tuner=96200000 Hz direct=0
+RTL_HOT_TUNE display=96200000 lo=96200000 ok
+RTL_FM_CONFIG_SAVE frequency_hz=96200000 presets=1
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=STREAMING profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=MANUAL gain_tenth_db=27 rtl_agc=0 bias=0 bytes=2015035392 blocks=61494 effective_sps=2395845 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96200000 frequency_ok=1 route=TUNER bw_requested_hz=0 bw_applied_hz=0
+RTL_FM_SAVE frequency_hz=96100000
+RTL_FREQ_OK band=FM frequency_hz=96100000
+RTL_DONGLE_GATE_VISUAL dongle=V4L stage=retune inspect_spectrum_and_audio=1 seconds=20
+RTL_FM_CONFIG_SAVE frequency_hz=96100000 presets=1
+I (441881) esp_rtl_sdr: tune rf=96100000 Hz tuner=96100000 Hz ppm=0 hf_upconv=0 r16=a4/84 r20=4a r21=af r22=65 pll_if_hz=1814972
+I (441925) esp_rtl_sdr: hot retune applied rf=96100000 Hz tuner=96100000 Hz direct=0
+RTL_HOT_TUNE display=96100000 lo=96100000 ok
+RTL_SIGNAL_STATUS band=FM frequency_hz=96100000 signal_dbfs_tenths=-219 stereo_locked=1 left_dbfs_tenths=156 right_dbfs_tenths=148 rds_carrier=1 rds_signal_tenths=-53 pilot_env_thou=3865 clipping_percent=0.000 filter_hz=260000 lo_nudge=0
+RTL_SIGNAL_STATUS band=FM frequency_hz=96100000 signal_dbfs_tenths=-220 stereo_locked=1 left_dbfs_tenths=86 right_dbfs_tenths=75 rds_carrier=1 rds_signal_tenths=-68 pilot_env_thou=3475 clipping_percent=0.000 filter_hz=260000 lo_nudge=0
+RTL_SIGNAL_STATUS band=FM frequency_hz=96100000 signal_dbfs_tenths=-218 stereo_locked=1 left_dbfs_tenths=97 right_dbfs_tenths=88 rds_carrier=1 rds_signal_tenths=-73 pilot_env_thou=3347 clipping_percent=0.000 filter_hz=260000 lo_nudge=0
+RTL_SIGNAL_STATUS band=FM frequency_hz=96100000 signal_dbfs_tenths=-221 stereo_locked=1 left_dbfs_tenths=104 right_dbfs_tenths=95 rds_carrier=1 rds_signal_tenths=-64 pilot_env_thou=3644 clipping_percent=0.000 filter_hz=260000 lo_nudge=0
+PAIR_OK
+AUTH_OK [redacted]
+RTL_UI_SOAK_AUTH verified=1
+{"type":"hello","message_id":"m5tab5_hello_01","protocol_version":{"major":1,"minor":0},"payload":{"adapter":{"id":"m5tab5.serial","version":"0.8.31"},"features":["telemetry","display","touch","authenticated_session","journal","network_inventory","wifi_provisioning","power_telemetry","usb_host","rtl_sdr_probe","rtl_sdr_radio_ui","rtl_sdr_scope_scroll"],"capability_namespaces":["m5tab5"],"config_schema_version":1}}
+{"type":"node_snapshot","message_id":"m5tab5_snapshot_460789","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","connection_state":"online","hardware":{"chip":"esp32p4","revision":103,"cores":2,"flash_bytes":16777216,"psram_bytes":33554432,"free_heap_bytes":17171872,"display":{"width":1280,"height":720,"touch_ready":true}},"network":{"transport":"esp_hosted_sdio","station_ready":true,"configured":true,"scan_result":-1,"connected":true,"ip":"192.168.1.75"},"power":{"source":"m5unified","pmic_detected":false,"pmic_type":0,"battery_level":99,"battery_mv":8184,"battery_ma":2,"vbus_mv":-1,"charging":"unknown"},"journal":{"latest_sequence":1732,"acknowledged_sequence":0,"pending":8,"dropped":1724},"offline_workflow":{"id":"status_on_disconnect","config_revision":0,"runs":0,"max_runs":0},"capabilities":["m5tab5.device.info","m5tab5.health.read","m5tab5.display.status","m5tab5.input.touch","m5tab5.event.journal.sync","m5tab5.network.inventory","m5tab5.network.configure","m5tab5.power.read"]}}
+{"type":"event","message_id":"m5tab5_journal_1725","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1725,"event_kind":"session_online","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1726","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1726,"event_kind":"session_online","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1727","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1727,"event_kind":"session_online","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1728","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1728,"event_kind":"session_online","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1729","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1729,"event_kind":"session_online","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1730","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1730,"event_kind":"session_online","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1731","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1731,"event_kind":"session_online","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1732","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1732,"event_kind":"session_online","x":-1,"y":-1}}
+RTL_SIGNAL_STATUS band=FM frequency_hz=96100000 signal_dbfs_tenths=-218 stereo_locked=1 left_dbfs_tenths=113 right_dbfs_tenths=105 rds_carrier=1 rds_signal_tenths=-53 pilot_env_thou=3969 clipping_percent=0.000 filter_hz=260000 lo_nudge=0
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=STREAMING profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=MANUAL gain_tenth_db=27 rtl_agc=0 bias=0 bytes=2115338240 blocks=64555 effective_sps=2395664 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=1 route=TUNER bw_requested_hz=0 bw_applied_hz=0
+{"type":"rtl_audio_test","mode":"idle","elapsed_ms":0,"speaker_enabled":1,"speaker_running":1,"sample_rate":48000,"headphone_connected":1,"internal_speaker_muted":1,"stereo":1,"speaker_core":1,"speaker_priority":6,"ring_blocks":3,"ring_overruns":0,"submit_failures":0,"audio_chunks":10328,"audio_drops":0,"effective_sps":2395647,"usb_overruns":0,"usb_drops":0,"dsp_block_us_max":8429,"dsp_gate_us":13653,"task_count":24,"task_delta":24,"free_heap":17171872}
+RTL_FREQ_STATUS band=FM frequency_hz=96100000 mode=WBFM
+RTL_HEALTH_STATUS uptime_ms=461454 free_heap=17171872 min_free_heap=17132952 dma_free=111667 dma_min=106763 dma_largest=69632 tasks=24 main_stack_hwm=5112 reset_reason=11 internal_free=151223 internal_min=146319 internal_largest=69632 psram_free=17060804 psram_largest=16777216
+RTL_IQ_DIAG_STATUS transition="gate-bw_0" sequence=8 active=0 ready=0 bytes=0 max_bytes=4800000 rate=2400000 frequency_hz=96100000 started_ms=407189
+RTL_IQ_START source=diagnostic mode=manual bytes=4800000 seconds=1 duration_ms=1000 rate=2400000 frequency_hz=96100000 sf=0 bw=260000 signal_dbfs=-21.8 noise_dbfs=-90.0 trigger_dbfs=-75.0 sequence=9 trigger_offset_samples=0
+RTL_IQ_DIAG_START transition="gate-retune" sequence=9 bytes=4800000 rate=2400000 frequency_hz=96100000 started_ms=461500
+RTL_IQ_DONE storage=psram source=diagnostic bytes=4800000 samples=2400000 rate=2400000 frequency_hz=96100000 sf=0 bw=260000 mode=manual sequence=9 capture_ms=998 trigger_offset_samples=0 drops=0
+RTL_IQ_GET_READY chunk=2048 bytes=4800000
+RTL_IQ_GET_DONE bytes=4800000 sha256=40895f56c050161401dfb0ba06ab5273bcbc1aeb71fd5070d67373c032574f40
+RTL_IQ_RETRIEVE_DONE
+RTL_DONGLE_GATE_IQ stage=retune rate=2400000 frequency_hz=96100000 bytes=4800000 sha256=40895f56c050161401dfb0ba06ab5273bcbc1aeb71fd5070d67373c032574f40 path=C:\Users\hardc\.codex\worktrees\v3c-tuner-bw-closeout\OrcSDR\artifacts\rtl-dongle-gate\20260928-172449-v4l-retune.cu8
+RTL_DONGLE_GATE_RESULT dongle=V4L serial_pass=1 visual=pending
+PAIR_OK
+AUTH_OK [redacted]
+RTL_UI_SOAK_AUTH verified=1
+{"type":"hello","message_id":"m5tab5_hello_01","protocol_version":{"major":1,"minor":0},"payload":{"adapter":{"id":"m5tab5.serial","version":"0.8.31"},"features":["telemetry","display","touch","authenticated_session","journal","network_inventory","wifi_provisioning","power_telemetry","usb_host","rtl_sdr_probe","rtl_sdr_radio_ui","rtl_sdr_scope_scroll"],"capability_namespaces":["m5tab5"],"config_schema_version":1}}
+{"type":"node_snapshot","message_id":"m5tab5_snapshot_494692","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","connection_state":"online","hardware":{"chip":"esp32p4","revision":103,"cores":2,"flash_bytes":16777216,"psram_bytes":33554432,"free_heap_bytes":17171872,"display":{"width":1280,"height":720,"touch_ready":true}},"network":{"transport":"esp_hosted_sdio","station_ready":true,"configured":true,"scan_result":-1,"connected":true,"ip":"192.168.1.75"},"power":{"source":"m5unified","pmic_detected":false,"pmic_type":0,"battery_level":99,"battery_mv":8184,"battery_ma":1,"vbus_mv":-1,"charging":"unknown"},"journal":{"latest_sequence":1733,"acknowledged_sequence":0,"pending":8,"dropped":1725},"offline_workflow":{"id":"status_on_disconnect","config_revision":0,"runs":0,"max_runs":0},"capabilities":["m5tab5.device.info","m5tab5.health.read","m5tab5.display.status","m5tab5.input.touch","m5tab5.event.journal.sync","m5tab5.network.inventory","m5tab5.network.configure","m5tab5.power.read"]}}
+{"type":"event","message_id":"m5tab5_journal_1726","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1726,"event_kind":"session_online","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1727","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1727,"event_kind":"session_online","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1728","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1728,"event_kind":"session_online","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1729","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1729,"event_kind":"session_online","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1730","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1730,"event_kind":"session_online","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1731","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1731,"event_kind":"session_online","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1732","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1732,"event_kind":"session_online","x":-1,"y":-1}}
+{"type":"event","message_id":"m5tab5_journal_1733","protocol_version":{"major":1,"minor":0},"payload":{"node_id":"m5tab5_30eda0e2e695","kind":"local_journal","journal_sequence":1733,"event_kind":"session_online","x":-1,"y":-1}}
+RTL_FREQ_STATUS band=FM frequency_hz=96100000 mode=WBFM
+RTL_DRIVER_STATUS installed=1 version=0.9.0 state=STREAMING profile=4 profile_name="blog_v4l_r828s" provisional=0 device_caps=0x001fff3f library_caps=0x001fff7f delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=1 mode=MANUAL gain_tenth_db=27 rtl_agc=0 bias=0 bytes=2277998592 blocks=69519 effective_sps=2395971 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96100000 frequency_ok=1 route=TUNER bw_requested_hz=0 bw_applied_hz=0
+RTL_DONGLE_GATE_RESTORE frequency_hz=96100000 bw_requested_hz=0
