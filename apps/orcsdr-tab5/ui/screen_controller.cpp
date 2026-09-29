@@ -64,6 +64,7 @@ const char* name(Id id) {
     case Id::settings: return "settings";
     case Id::documentation: return "documentation";
     case Id::cb: return "cb";
+    case Id::elf: return "elf";
     default: return "none";
   }
 }
