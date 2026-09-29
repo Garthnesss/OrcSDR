@@ -77,5 +77,5 @@ Releases](https://github.com/hardcoreerik/OrcSDR/releases).
 For a future release, use **USER CUSTOM → Publish** privately first and test
 with its Share Code. Only after the exact-tag hardware gate in
 [M5BURNER_HARDWARE_GATE.md](M5BURNER_HARDWARE_GATE.md) passes may its GitHub
-prerelease be created and its listing made public. M5Burner publishing details
+release be created and its listing made public. M5Burner publishing details
 are in the [official guide](https://docs.m5stack.com/en/uiflow/m5burner/publish).

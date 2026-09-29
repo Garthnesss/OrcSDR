@@ -21,6 +21,10 @@ validation alone does not authorize a GitHub release or public listing.
    route remains a recovery-only path and must preserve NVS and stop with
    recovery guidance when Hosted cannot form a link.
 
+6. Run `tools/release/test-installer-package.ps1` for the tag. With a Tab5 that has a saved Wi-Fi profile,
+   run the unzipped installer and confirm `saved_profiles`, the connection and the event-journal count are
+   unchanged afterwards (an M5Burner install resets them, #117).
+
 Attach photos/screenshots and serial evidence to the tag record. Only then
-create the GitHub prerelease with the verified artifacts and change its
+create the GitHub release with the verified artifacts and change its
 M5Burner listing from private to public.

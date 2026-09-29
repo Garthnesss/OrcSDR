@@ -121,13 +121,21 @@ truth.
        .\tools\release\build-m5burner.ps1
        .\tools\release\test-m5burner-bundle.ps1 -BundlePath .\dist\OrcSDR-Tab5-<tag> -Version <tag>
 
+   Then build and test the settings-safe installer zips from that bundle (they are attached to the release
+   in step 7):
+
+       .\tools\release\build-installer.ps1 -Version <tag>
+       .\tools\release\test-installer-package.ps1 -Version <tag>
+
 6. **Pass the hardware gate** in [`M5BURNER_HARDWARE_GATE.md`](M5BURNER_HARDWARE_GATE.md) on the exact
    package: private M5Burner listing installed through its share code, then Home, FM audio, RTL-SDR,
    Wi-Fi scan, a saved-profile connection, RF24 and the UI regression. Keep serial logs and photos with
    the tag record.
 7. **Push the tag and create the GitHub release** with the release notes as its body and the verified
-   artifacts attached. `alpha`, `beta` and `rc` releases are always flagged **prerelease**; only a stable
-   release is **Latest**.
+   artifacts attached (the M5Burner `.bin`, `SHA256SUMS.txt` and the installer zips). How the release is flagged on GitHub
+   follows the stage: `alpha` and `rc` are published as **prereleases**; `beta` and stable releases are
+   published as normal **releases** (and are **Latest** while they are the newest public one).
+   v0.3.0-beta.1 was published this way.
 8. **Verify what you published.** Download every attached asset back from the release page and compare
    its SHA-256 with the bundle you tested, and confirm a full-flash image really is a complete image for
    its address. (The original `v0.2.0-beta7` download was an application-only image labelled as a complete
