@@ -18396,6 +18396,80 @@ void setup() {
   rtl_boot_complete.store(true, std::memory_order_release);
 }
 
+
+#if ORCSDR_ELF_MODE
+constexpr size_t kElfAudioFrames = 256;
+constexpr size_t kElfAudioBlocks = 4;
+alignas(4) int16_t g_elf_audio_mono[kElfAudioFrames]{};
+alignas(4) int16_t g_elf_audio_stereo[kElfAudioBlocks][kElfAudioFrames * 2]{};
+int64_t g_elf_audio_ready_us[kElfAudioBlocks]{};
+size_t g_elf_audio_block = 0;
+int64_t g_elf_audio_next_us = 0;
+bool g_elf_audio_owned = false;
+
+void begin_elf_audio_output() {
+  if (g_elf_audio_owned) return;
+  g_elf_audio_owned = true;
+
+  // Radio/DSP reception continues, but its PCM queue no longer owns the
+  // speaker while the hidden instrument is active.
+  rtl_audio_enabled.store(false, std::memory_order_release);
+  rtl_audio_play_count = 0;
+  M5.Speaker.stop();
+
+  allow_boot_speaker();
+  (void)ensure_speaker_running(rtl_live_volume.load(std::memory_order_acquire));
+
+  g_elf_audio_block = 0;
+  g_elf_audio_next_us = esp_timer_get_time();
+  for (auto& ready : g_elf_audio_ready_us) ready = 0;
+  Serial.println("ELF_AUDIO_OWNER synth");
+}
+
+void service_elf_audio_output() {
+  if (!g_elf_audio_owned) return;
+  if (orcsdr::elf_mode::active_voice_count() == 0) return;
+
+  if (!M5.Speaker.isRunning() &&
+      !ensure_speaker_running(rtl_live_volume.load(std::memory_order_acquire)))
+    return;
+
+  int64_t now = esp_timer_get_time();
+  if (g_elf_audio_next_us == 0) g_elf_audio_next_us = now;
+
+  // Cap catch-up work so display/touch stays responsive.
+  for (int block_count = 0; block_count < 2 && now >= g_elf_audio_next_us; ++block_count) {
+    if (now < g_elf_audio_ready_us[g_elf_audio_block]) break;
+
+    orcsdr::elf_mode::render_audio(g_elf_audio_mono, kElfAudioFrames);
+    int16_t* stereo = g_elf_audio_stereo[g_elf_audio_block];
+    for (size_t i = 0; i < kElfAudioFrames; ++i) {
+      stereo[i * 2] = g_elf_audio_mono[i];
+      stereo[i * 2 + 1] = g_elf_audio_mono[i];
+    }
+
+    if (M5.Speaker.playRaw(stereo, kElfAudioFrames * 2, 48000, true, 1, 0, false)) {
+      g_elf_audio_ready_us[g_elf_audio_block] = now + 6000;
+      g_elf_audio_block = (g_elf_audio_block + 1) % kElfAudioBlocks;
+    }
+
+    g_elf_audio_next_us += 5333;
+    now = esp_timer_get_time();
+  }
+}
+
+void end_elf_audio_output() {
+  if (!g_elf_audio_owned) return;
+  orcsdr::elf_mode::all_notes_off();
+  M5.Speaker.stop();
+  g_elf_audio_owned = false;
+  g_elf_audio_next_us = 0;
+  rtl_audio_play_count = 0;
+  resume_rtl_speaker();
+  Serial.println("ELF_AUDIO_OWNER radio");
+}
+#endif
+
 void loop() {
   static uint32_t previous_loop_ms = 0;
   const uint32_t loop_started_ms = millis();
@@ -18460,15 +18534,19 @@ void loop() {
     Serial.printf("RTL_MAIN_STALL stage=m5_update elapsed_ms=%u\n", m5_elapsed_ms);
 
 #if ORCSDR_ELF_MODE
-  // Elf Mode is a post-boot, full-screen borrower of the existing M5GFX path.
-  // Radio/DSP state stays intact in Phase 0; only framebuffer/touch ownership
-  // moves to the hidden surface.
+  // Elf Mode borrows OrcSDR's existing M5GFX/M5Unified hardware. Reception can
+  // continue underneath, but the synth exclusively owns audible speaker PCM.
   if (orcsdr::elf_mode::active()) {
+    begin_elf_audio_output();
+
     const auto elf_touch = M5.Touch.getDetail(0);
     const bool elf_pressed = elf_touch.isPressed() || elf_touch.wasPressed();
     orcsdr::elf_mode::service_touch(elf_touch.x, elf_touch.y, elf_pressed);
+    service_elf_audio_output();
+
     if (orcsdr::elf_mode::take_exit_request()) {
       const auto restore = orcsdr::elf_mode::begin_leave(millis());
+      end_elf_audio_output();
       M5.Display.fillScreen(TFT_BLACK);
       orcsdr::screens::finish_transition();
       navigation_restore_screen(restore);

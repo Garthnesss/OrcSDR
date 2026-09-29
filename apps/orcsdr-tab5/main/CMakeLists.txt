@@ -54,6 +54,8 @@ idf_component_register(
         "../ui/dashboard_audio_control.cpp"
         "../ui/dashboard_registry.cpp"
         "../ui/device_status_service.cpp"
+        "../ui/elf_core.cpp"
+        "../ui/elf_synth.cpp"
         "../ui/elf_mode.cpp"
         "../ui/screen_controller.cpp"
         "../ui/scan_engine.cpp"
