@@ -44,6 +44,10 @@
 #define ORC_LORA_TEST_BUILD 0
 #endif
 
+#if !defined(ORCSDR_ELF_MODE)
+#define ORCSDR_ELF_MODE 0
+#endif
+
 #include "orcsdr_splash.hpp"
 #include "orcsdr_storage.hpp"
 #include "am_dashboard.hpp"
@@ -59,6 +63,7 @@
 #include "dashboard_audio_control.hpp"
 #include "dashboard_registry.hpp"
 #include "device_status_service.hpp"
+#include "elf_mode.hpp"
 #include "screen_controller.hpp"
 #include "scan_engine.hpp"
 #include "cb_dashboard.hpp"
@@ -13945,6 +13950,17 @@ void poll_sdr_touch(bool from_stream) {
   const uint8_t touch_count = M5.Touch.getCount();
   const auto touch = M5.Touch.getDetail(0);
   const bool pressed = touch.isPressed() || touch.wasPressed();
+
+#if ORCSDR_ELF_MODE
+  // Hidden Phase 0 entry point. This runs only after normal OrcSDR startup and
+  // only borrows the already initialized M5Unified/M5GFX display/touch stack.
+  if (orcsdr::elf_mode::try_unlock(rtl_ui_frequency_hz, touch.x, touch.y, pressed,
+                                   active_screen, now)) {
+    was_pressed = pressed;
+    return;
+  }
+#endif
+
   const int scope_width = spectrum_draw_width();
 
   if (rtl_nav_open) {
@@ -18442,6 +18458,26 @@ void loop() {
   const uint32_t m5_elapsed_ms = millis() - m5_started_ms;
   if (m5_elapsed_ms >= 500)
     Serial.printf("RTL_MAIN_STALL stage=m5_update elapsed_ms=%u\n", m5_elapsed_ms);
+
+#if ORCSDR_ELF_MODE
+  // Elf Mode is a post-boot, full-screen borrower of the existing M5GFX path.
+  // Radio/DSP state stays intact in Phase 0; only framebuffer/touch ownership
+  // moves to the hidden surface.
+  if (orcsdr::elf_mode::active()) {
+    const auto elf_touch = M5.Touch.getDetail(0);
+    const bool elf_pressed = elf_touch.isPressed() || elf_touch.wasPressed();
+    orcsdr::elf_mode::service_touch(elf_touch.x, elf_touch.y, elf_pressed);
+    if (orcsdr::elf_mode::take_exit_request()) {
+      const auto restore = orcsdr::elf_mode::begin_leave(millis());
+      M5.Display.fillScreen(TFT_BLACK);
+      orcsdr::screens::finish_transition();
+      navigation_restore_screen(restore);
+    }
+    delay(1);
+    return;
+  }
+#endif
+
   service_visualizer();
   service_rf_lab();
   if (rtl_stream_spectrum_pending.exchange(false, std::memory_order_acq_rel) &&

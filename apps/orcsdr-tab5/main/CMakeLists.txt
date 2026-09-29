@@ -18,6 +18,10 @@ if(C6_FIRMWARE_BIN)
     list(APPEND ORCSDR_LDFRAGMENTS "linker.lf")
 endif()
 
+# Hidden ElfChords Phase 0 surface. This is runtime-only and intentionally does
+# not participate in OrcSDR's established Tab5 startup sequence.
+set(ORCSDR_ELF_MODE 1 CACHE STRING "1 = enable hidden Elf Mode surface")
+
 # Stage-2 frontend benchmark lab (test builds only; see dsp/frontend_lab.hpp).
 set(ORCSDR_DSP_LAB 0 CACHE STRING "1 = Stage-2 multirate frontend benchmark lab (test builds only)")
 set(ORCSDR_LAB_SRCS)
@@ -50,6 +54,7 @@ idf_component_register(
         "../ui/dashboard_audio_control.cpp"
         "../ui/dashboard_registry.cpp"
         "../ui/device_status_service.cpp"
+        "../ui/elf_mode.cpp"
         "../ui/screen_controller.cpp"
         "../ui/scan_engine.cpp"
         "../ui/fm_dashboard.cpp"
@@ -132,6 +137,7 @@ target_compile_definitions(${COMPONENT_LIB} PRIVATE
     ORCSDR_HAS_EMBEDDED_C6_FIRMWARE=$<BOOL:${C6_FIRMWARE_BIN}>
     ORCSDR_DSP_AB=$<BOOL:${ORCSDR_DSP_AB}>
     ORCSDR_DSP_STAGE_TIMING=$<BOOL:${ORCSDR_DSP_STAGE_TIMING}>
-    ORCSDR_DSP_LAB=$<BOOL:${ORCSDR_DSP_LAB}>)
+    ORCSDR_DSP_LAB=$<BOOL:${ORCSDR_DSP_LAB}>
+    ORCSDR_ELF_MODE=$<BOOL:${ORCSDR_ELF_MODE}>)
 target_compile_options(${COMPONENT_LIB} PRIVATE
     "$<$<COMPILE_LANGUAGE:CXX>:-include;orcsdr_m5_time.hpp>")
