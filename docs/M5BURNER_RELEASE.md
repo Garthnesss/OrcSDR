@@ -14,8 +14,8 @@ is reachable.
 
 ## Saved settings and M5Burner
 
-An M5Burner install **does not preserve** P4 NVS: Wi-Fi profiles, location, screen rotation and
-other preferences are reset, even without an erase option
+An M5Burner install **does not preserve** P4 NVS: Wi-Fi profiles, location, screen rotation,
+other preferences and the local event journal are reset, even without an erase option
 ([#117](https://github.com/hardcoreerik/OrcSDR/issues/117), observed on v0.3.0-beta.1, 2026-09-28). The
 uploaded image is one contiguous file from address 0, and the NVS partition (0x9000 to 0xF000) is blank
 padding inside it. Earlier documentation that said otherwise was wrong.
