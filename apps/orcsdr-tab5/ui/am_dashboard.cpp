@@ -1,6 +1,7 @@
 #include "am_dashboard.hpp"
 
 #include "dashboard_audio_control.hpp"
+#include "freq_keypad.hpp"
 #include "orc_badge.hpp"
 #include "receiver_band_plan.hpp"
 #include "nvs_store.hpp"
@@ -11,6 +12,7 @@
 #include <algorithm>
 #include <atomic>
 #include <cmath>
+#include <cstdlib>
 #include <cstdio>
 #include <iterator>
 
@@ -32,16 +34,20 @@ constexpr int kSpectrumY = 246;
 constexpr int kSpectrumW = 1188;
 constexpr int kSpectrumH = 145;
 constexpr int kWaterfallY = 420;
-constexpr int kWaterfallH = 130;
+constexpr int kWaterfallH = 95;
 constexpr int kGainAutoX = 48;
 constexpr int kGainAutoY = 486;
 constexpr int kGainAutoW = 190;
 constexpr int kGainSliderX = 280;
 constexpr int kGainSliderY = 525;
 constexpr int kGainSliderW = 900;
-constexpr int kBandwidthSliderX = 720;
-constexpr int kBandwidthSliderY = 438;
-constexpr int kBandwidthSliderW = 500;
+// Filter bandwidth lives on the Spectrum page, under the waterfall.
+constexpr int kBandwidthSliderX = 300;
+constexpr int kBandwidthSliderY = 530;
+constexpr int kBandwidthSliderW = 620;
+// Listen page: TUNE -, TUNE +, STEP and DIRECT TUNE share one row.
+constexpr int kListenRowY = 398, kListenRowH = 76, kListenButtonW = 300;
+constexpr int kTuneDownX = 24, kTuneUpX = 334, kStepX = 644, kDirectX = 954;
 constexpr size_t kPresetsPerPage = 6;
 constexpr size_t kMaxPresets = 160;
 constexpr uint32_t kPresetHoldMs = 700;
@@ -60,6 +66,8 @@ struct GainLayout {
 Snapshot g_snapshot{};
 View g_view = View::listen;
 bool g_active = false;
+bool g_keypad = false;
+char g_entry[12]{};
 uint32_t g_last_dynamic_ms = 0;
 EXT_RAM_BSS_ATTR uint16_t g_waterfall_row[kSpectrumW]{};
 audio_header::Control g_audio_control{};
@@ -253,10 +261,13 @@ GainLayout gain_layout() {
 void draw_gain_control(bool compact) {
   const GainLayout layout = gain_layout();
   if (!g_snapshot.gain_available) {
-    button(layout.auto_x, layout.auto_y, layout.auto_w, layout.auto_h, "SMART", kMuted, false);
+    button(layout.auto_x, layout.auto_y, layout.auto_w, layout.auto_h,
+           g_snapshot.rtl_agc_available ? "RTL AGC" : "SMART",
+           g_snapshot.rtl_agc_available ? (g_snapshot.rtl_agc ? kGreen : kCyan) : kMuted,
+           g_snapshot.rtl_agc_available && g_snapshot.rtl_agc);
     text(compact ? "GAIN" : "RF GAIN", layout.slider_x,
          layout.slider_y - (compact ? 15 : 33), kMuted, 2, middle_left);
-    text("DIRECT Q", layout.slider_x + layout.slider_w,
+    text(g_snapshot.rtl_agc_available ? (g_snapshot.rtl_agc ? "DIRECT Q / ON" : "DIRECT Q / OFF") : "DIRECT Q", layout.slider_x + layout.slider_w,
          layout.slider_y - (compact ? 15 : 33), kMuted, 2, middle_right);
     M5.Display.fillRoundRect(layout.slider_x, layout.slider_y, layout.slider_w, 18, 9, kGrid);
     M5.Display.fillCircle(layout.slider_x, layout.slider_y + 9, compact ? 11 : 14, kMuted);
@@ -272,8 +283,10 @@ void draw_gain_control(bool compact) {
   else
     snprintf(value, sizeof(value), "%.1f dB",
              static_cast<double>(g_snapshot.gain_tenth_db) / 10.0);
-  button(layout.auto_x, layout.auto_y, layout.auto_w, layout.auto_h, "SMART", kGreen,
-         g_snapshot.gain_auto);
+  // SMART <-> MANUAL mode toggle; in MANUAL the slider sets the tuner gain.
+  button(layout.auto_x, layout.auto_y, layout.auto_w, layout.auto_h,
+         g_snapshot.gain_auto ? "SMART" : "MANUAL",
+         g_snapshot.gain_auto ? kGreen : TFT_ORANGE, true);
   text(compact ? "GAIN" : "RF GAIN", layout.slider_x,
        layout.slider_y - (compact ? 15 : 33), kCyan, 2, middle_left);
   text(value, layout.slider_x + layout.slider_w,
@@ -295,10 +308,10 @@ void draw_listen_static() {
   card(24, 150, 820, 230);
   card(860, 150, 396, 230);
   text("RELATIVE SIGNAL", 884, 178, kCyan, 2, top_left);
-  button(24, 398, 160, 76, "TUNE -");
-  button(194, 398, 160, 76, "TUNE +");
-  button(364, 398, 210, 76, "STEP");
-  text("BANDWIDTH", 600, 420, kCyan, 2, middle_left);
+  button(kTuneDownX, kListenRowY, kListenButtonW, kListenRowH, "TUNE -");
+  button(kTuneUpX, kListenRowY, kListenButtonW, kListenRowH, "TUNE +");
+  button(kStepX, kListenRowY, kListenButtonW, kListenRowH, "STEP");
+  button(kDirectX, kListenRowY, 1256 - kDirectX, kListenRowH, "DIRECT TUNE", kGreen);
   for (int i = 0; i < 6; ++i) button(24 + i * 166, 494, 154, 70, "EMPTY", kGrid);
   button(1020, 494, 236, 70, "SAVE CURRENT", kGreen);
   text("PRESETS", 24, 582, kCyan, 2, middle_left);
@@ -325,7 +338,10 @@ void draw_bandwidth_slider() {
   char value[16];
   snprintf(value, sizeof(value), "%lu kHz",
            static_cast<unsigned long>(g_snapshot.filter_bandwidth_hz / 1000));
-  text(value, 1220, 410, kGreen, 2, middle_right);
+  M5.Display.fillRect(kBandwidthSliderX - 16, kBandwidthSliderY - 14,
+                      1236 - (kBandwidthSliderX - 16), 46, kPanel);
+  text("FILTER", 55, kBandwidthSliderY + 9, kCyan, 2, middle_left);
+  text(value, 1220, kBandwidthSliderY + 9, kGreen, 2, middle_right);
   M5.Display.fillRoundRect(kBandwidthSliderX, kBandwidthSliderY,
                            kBandwidthSliderW, 18, 9, kGrid);
   const int x = kBandwidthSliderX +
@@ -334,8 +350,9 @@ void draw_bandwidth_slider() {
   M5.Display.fillRoundRect(kBandwidthSliderX, kBandwidthSliderY,
                            std::max(9, x - kBandwidthSliderX), 18, 9, kGreen);
   M5.Display.fillCircle(x, kBandwidthSliderY + 9, 13, kGreen);
-  text("3", kBandwidthSliderX, 468, kMuted, 1);
-  text("30", kBandwidthSliderX + kBandwidthSliderW, 468, kMuted, 1);
+  text("3", kBandwidthSliderX - 10, kBandwidthSliderY + 9, kMuted, 1, middle_right);
+  text("30", kBandwidthSliderX + kBandwidthSliderW + 10, kBandwidthSliderY + 9, kMuted, 1,
+       middle_left);
 }
 
 void draw_listen_dynamic() {
@@ -356,8 +373,7 @@ void draw_listen_dynamic() {
   text(value, 1058, 275, g_snapshot.running ? kGreen : TFT_RED, 2);
   draw_gain_control(true);
   snprintf(value, sizeof(value), "STEP %s kHz", step);
-  button(364, 398, 210, 76, value, kCyan);
-  draw_bandwidth_slider();
+  button(kStepX, kListenRowY, kListenButtonW, kListenRowH, value, kCyan);
   for (int i = 0; i < 6; ++i) {
     char preset[20];
     if (i < g_snapshot.preset_count && g_snapshot.presets_hz[i]) {
@@ -465,6 +481,7 @@ void draw_spectrum_dynamic() {
            static_cast<unsigned long>(g_snapshot.span_hz / 1000));
   text(value, 1220, 214, kGreen, 3, middle_right);
   draw_gain_control(true);
+  draw_bandwidth_slider();
 }
 
 void draw_settings_static() {
@@ -503,7 +520,16 @@ void draw_view() {
   draw_tabs();
 }
 
+void draw_keypad() {
+  char hint[24];
+  snprintf(hint, sizeof(hint), "%lu - %lu",
+           static_cast<unsigned long>(receiver_bands::kAmBroadcast.min_hz / 1000u),
+           static_cast<unsigned long>(receiver_bands::kAmBroadcast.max_hz / 1000u));
+  freq_keypad::draw(kHeaderH, kBg, "ENTER AM FREQUENCY", hint, "kHz", g_entry);
+}
+
 void draw_dynamic() {
+  if (g_keypad) return;
   if (g_view == View::listen) draw_listen_dynamic();
   else if (g_view == View::finder) draw_finder_dynamic();
   else if (g_view == View::spectrum) draw_spectrum_dynamic();
@@ -526,6 +552,8 @@ void enter(const Snapshot& snapshot) {
   g_snapshot = snapshot;
   g_view = View::listen;
   g_active = true;
+  g_keypad = false;
+  g_entry[0] = '\0';
   g_preset_modal = false;
   g_preset_pressed = false;
   audio_header::reset(g_audio_control);
@@ -535,12 +563,17 @@ void enter(const Snapshot& snapshot) {
 void leave() {
   M5.Display.clearScrollRect();
   g_active = false;
+  g_keypad = false;
 }
 
 void draw() {
   if (!g_active) return;
   M5.Display.fillScreen(kBg);
   draw_header();
+  if (g_keypad) {
+    draw_keypad();
+    return;
+  }
   draw_view();
   draw_dynamic();
 }
@@ -595,6 +628,18 @@ void draw_spectrum(const float* levels, size_t first_bin, size_t visible_bins, f
   M5.Display.endWrite();
 }
 
+Action gain_button_action(const Snapshot& snapshot) {
+  if (snapshot.gain_available) {
+    if (snapshot.gain_auto)
+      return {ActionKind::gain_tenth_db,
+              static_cast<uint32_t>(std::max(0, snapshot.gain_tenth_db))};
+    return {ActionKind::gain_auto};
+  }
+  if (snapshot.rtl_agc_available)
+    return {ActionKind::rtl_agc, snapshot.rtl_agc ? 0u : 1u};
+  return {};
+}
+
 Action handle_touch(int32_t x, int32_t y) {
   if (!g_active) return {};
   if (g_scan_prompt) {
@@ -608,6 +653,28 @@ Action handle_touch(int32_t x, int32_t y) {
     return {};
   }
   if (audio_header::settings_hit(x, y)) return {ActionKind::open_device_settings};
+  if (g_keypad) {
+    const auto result = freq_keypad::handle_touch(x, y, g_entry, sizeof(g_entry));
+    if (result == freq_keypad::Result::cancelled) {
+      g_keypad = false;
+      g_entry[0] = '\0';
+      draw();
+      return {};
+    }
+    if (result == freq_keypad::Result::submitted) {
+      char* end = nullptr;
+      const double khz = strtod(g_entry, &end);
+      const uint32_t hz = static_cast<uint32_t>(llround(khz * 1000.0));
+      if (end != g_entry && *end == '\0' && hz >= receiver_bands::kAmBroadcast.min_hz &&
+          hz <= receiver_bands::kAmBroadcast.max_hz) {
+        g_keypad = false;
+        g_entry[0] = '\0';
+        draw();
+        return {ActionKind::tune_hz, hz};
+      }
+    }
+    return {};
+  }
   if (y >= kTabsY) {
     const uint8_t next = std::min<uint8_t>(x / kTabW, static_cast<uint8_t>(View::count) - 1);
     if (next != static_cast<uint8_t>(g_view)) {
@@ -618,14 +685,22 @@ Action handle_touch(int32_t x, int32_t y) {
   }
   if (g_view != View::finder) {
     const GainLayout layout = gain_layout();
-    if (g_snapshot.gain_available &&
-        hit(x, y, layout.auto_x, layout.auto_y, layout.auto_w, layout.auto_h))
-      return {ActionKind::gain_auto};
+    if (hit(x, y, layout.auto_x, layout.auto_y, layout.auto_w, layout.auto_h))
+      return gain_button_action(g_snapshot);
   }
   if (g_view == View::listen) {
-    if (hit(x, y, 24, 398, 160, 76)) return {ActionKind::step_down};
-    if (hit(x, y, 194, 398, 160, 76)) return {ActionKind::step_up};
-    if (hit(x, y, 364, 398, 210, 76)) return {ActionKind::step_cycle};
+    if (hit(x, y, kTuneDownX, kListenRowY, kListenButtonW, kListenRowH))
+      return {ActionKind::step_down};
+    if (hit(x, y, kTuneUpX, kListenRowY, kListenButtonW, kListenRowH))
+      return {ActionKind::step_up};
+    if (hit(x, y, kStepX, kListenRowY, kListenButtonW, kListenRowH))
+      return {ActionKind::step_cycle};
+    if (hit(x, y, kDirectX, kListenRowY, 1256 - kDirectX, kListenRowH)) {
+      g_keypad = true;
+      g_entry[0] = '\0';
+      draw();
+      return {};
+    }
     if (hit(x, y, 1020, 494, 236, 70)) return {ActionKind::preset_save};
     if (hit(x, y, 710, 570, 70, 48) && g_preset_page > 0) {
       --g_preset_page;
@@ -663,7 +738,7 @@ Action handle_touch(int32_t x, int32_t y) {
   } else if (g_view == View::spectrum) {
     if (hit(x, y, 390, 565, 70, 42)) return {ActionKind::span_down};
     if (hit(x, y, 820, 565, 70, 42)) return {ActionKind::span_up};
-    if (hit(x, y, kSpectrumX, kSpectrumY, kSpectrumW, kSpectrumH + kWaterfallH + 30)) {
+    if (hit(x, y, kSpectrumX, kSpectrumY, kSpectrumW, kWaterfallY + kWaterfallH - kSpectrumY)) {
       const int64_t offset = static_cast<int64_t>(x - (kSpectrumX + kSpectrumW / 2)) *
                              g_snapshot.span_hz / kSpectrumW;
       const int64_t selected = static_cast<int64_t>(g_snapshot.frequency_hz) + offset;
@@ -684,7 +759,7 @@ Action handle_touch(int32_t x, int32_t y) {
 }
 
 TouchResult handle_preset_touch(int32_t x, int32_t y, bool pressed, uint32_t now_ms) {
-  if (!g_active || g_view != View::listen) {
+  if (!g_active || g_keypad || g_view != View::listen) {
     g_preset_pressed = false;
     return {};
   }
@@ -743,7 +818,7 @@ TouchResult handle_preset_touch(int32_t x, int32_t y, bool pressed, uint32_t now
 
 Action handle_gain_drag(int32_t x, int32_t y) {
   const GainLayout layout = gain_layout();
-  if (!g_active || g_view == View::finder ||
+  if (!g_active || g_keypad || g_view == View::finder ||
       !hit(x, y, layout.slider_x - 14, layout.slider_y - 24, layout.slider_w + 28, 66) ||
       g_snapshot.gain_step_count == 0) return {};
   const int raw_index = static_cast<int>(x - layout.slider_x) *
@@ -756,9 +831,10 @@ Action handle_gain_drag(int32_t x, int32_t y) {
 }
 
 Action handle_bandwidth_drag(int32_t x, int32_t y) {
-  if (!g_active || g_view != View::listen ||
-      !hit(x, y, kBandwidthSliderX - 18, kBandwidthSliderY - 24,
-           kBandwidthSliderW + 36, 66))
+  // Kept clear of the waterfall above and the SPAN / GAIN row below.
+  if (!g_active || g_keypad || g_view != View::spectrum ||
+      !hit(x, y, kBandwidthSliderX - 18, kWaterfallY + kWaterfallH + 1,
+           kBandwidthSliderW + 36, 548 - (kWaterfallY + kWaterfallH)))
     return {};
   const uint32_t bandwidth_hz = bandwidth_for_x(x);
   if (bandwidth_hz == g_snapshot.filter_bandwidth_hz) return {};
@@ -766,7 +842,7 @@ Action handle_bandwidth_drag(int32_t x, int32_t y) {
 }
 
 bool active() { return g_active; }
-bool spectrum_active() { return g_active && g_view == View::spectrum; }
+bool spectrum_active() { return g_active && !g_keypad && g_view == View::spectrum; }
 View view() { return g_view; }
 
 void load(NvsStore& store) {
@@ -907,6 +983,13 @@ void populate_presets(Snapshot& snapshot) {
 }
 
 bool self_check() {
+  Snapshot gain{};
+  gain.rtl_agc_available = true;
+  const Action rtl_on = gain_button_action(gain);
+  gain.rtl_agc = true;
+  const Action rtl_off = gain_button_action(gain);
+  gain.gain_available = true;
+  const Action tuner_mode = gain_button_action(gain);
   const float scan_levels[] = {
       -80.0f, -70.0f, -80.0f, -60.0f, -80.0f, -50.0f, -80.0f};
   const float quiet_levels[] = {-80.0f, -80.0f, -80.0f};
@@ -915,6 +998,9 @@ bool self_check() {
   uint32_t presets[] = {590000, 1050000, 1280000};
   size_t preset_count = std::size(presets);
   return static_cast<uint8_t>(View::count) == 4 &&
+         rtl_on.kind == ActionKind::rtl_agc && rtl_on.value == 1 &&
+         rtl_off.kind == ActionKind::rtl_agc && rtl_off.value == 0 &&
+         tuner_mode.kind == ActionKind::gain_tenth_db &&
          receiver_bands::valid(receiver_bands::kAmBroadcast) &&
          kSpectrumX + kSpectrumW <= 1280 && kGainSliderX + kGainSliderW <= 1280 &&
          kTabsY < 720 && audio_header::self_check() &&
@@ -931,6 +1017,10 @@ bool self_check() {
           !auto_gain_should_reduce(0.1f, 1) &&
           !auto_gain_should_reduce(0.2f, 0) &&
           bandwidth_for_x(kBandwidthSliderX) == 3000 &&
+          freq_keypad::self_check() &&
+          kWaterfallY + kWaterfallH < kBandwidthSliderY - 13 &&
+          kBandwidthSliderY + 9 + 13 < 561 &&
+          kDirectX + kListenButtonW <= 1256 + 2 &&
           bandwidth_for_x(kBandwidthSliderX + kBandwidthSliderW) == 30000 &&
           erase_preset(presets, preset_count, 1) && preset_count == 2 &&
           presets[0] == 590000 && presets[1] == 1280000 && presets[2] == 0;

@@ -68,7 +68,17 @@ param(
   [switch]$InstallFaaAircraft,
   [string]$LocationQuery = '97401',
   [switch]$RequireWifiConnection,
-  [switch]$TestBiasTee
+  [switch]$TestBiasTee,
+  [ValidateSet('V3c', 'V4', 'V4L')]
+  [string]$DongleGate,
+  [ValidateRange(5, 300)]
+  [int]$VisualDwellSeconds = 15,
+  [switch]$GateIq,
+  # V3c gate bandwidth sequence (Hz, 0 = AUTO). Default is 200 kHz then AUTO.
+  [int[]]$GateBandwidths = @(200000, 0),
+  # After the baseline is stable, wait for the dongle to be unplugged and replugged
+  # (driver leaves STREAMING and returns) before running the gate.
+  [switch]$WaitForReplug
 )
 
 $ErrorActionPreference = 'Stop'
@@ -76,6 +86,9 @@ $script:serial = $null
 $script:linesSeen = 0
 $script:soakLogPath = $null
 $script:lastV3cRfState = $null
+$script:sawDisconnect = $false
+# $PSBoundParameters is empty inside functions; remember an explicit -GateBandwidths here.
+$script:gateBandwidthsExplicit = $PSBoundParameters.ContainsKey('GateBandwidths')
 
 if ($Profile) {
   $Soak = $true
@@ -97,6 +110,10 @@ if ($RadioScan) {
     $LogPath = Join-Path $artifactDir "$timestamp-cycles$Cycles.log"
   }
 }
+if ($DongleGate -and !$LogPath) {
+  $artifactDir = Join-Path $PSScriptRoot '..\..\..\artifacts\rtl-dongle-gate'
+  $LogPath = Join-Path $artifactDir "$(Get-Date -Format 'yyyyMMdd-HHmmss')-$($DongleGate.ToLowerInvariant()).log"
+}
 if ($LogPath) {
   $parent = Split-Path -Parent $LogPath
   if ($parent) { [void](New-Item -ItemType Directory -Force $parent) }
@@ -104,9 +121,14 @@ if ($LogPath) {
 }
 if ($Soak -and $Cycles -eq 0) { $Cycles = 10 }
 
+function Protect-SerialLogLine([string]$Line) {
+  return $Line -replace '^AUTH_OK\s+\S+', 'AUTH_OK [redacted]'
+}
+
 function Write-SoakLine([string]$Line) {
-  Write-Host $Line
-  if ($script:soakLogPath) { Add-Content -LiteralPath $script:soakLogPath -Value $Line }
+  $safeLine = Protect-SerialLogLine $Line
+  Write-Host $safeLine
+  if ($script:soakLogPath) { Add-Content -LiteralPath $script:soakLogPath -Value $safeLine }
 }
 
 function Test-FatalLine([string]$Line) {
@@ -128,6 +150,7 @@ function Read-MatchingLine([string]$Pattern, [int]$Seconds = $TimeoutSeconds) {
       $script:linesSeen++
       Write-SoakLine $line
       if ($line -match 'V3C_RF_STATE ') { $script:lastV3cRfState = $line }
+      if ($line -match 'RTL_SDR_DISCONNECTED') { $script:sawDisconnect = $true }
       if (Test-FatalLine $line) { throw "Device crash/reset detected: $line" }
       if ($line -match $Pattern) { return $line }
     } catch [System.TimeoutException] {}
@@ -206,6 +229,7 @@ function Drain-SerialOutput([int]$QuietMilliseconds = 300, [int]$MaximumMillisec
       if (!$line) { continue }
       $script:linesSeen++
       Write-SoakLine $line
+      if ($line -match 'RTL_SDR_DISCONNECTED') { $script:sawDisconnect = $true }
       if (Test-FatalLine $line) { throw "Device crash/reset detected: $line" }
       $quietUntil = [DateTime]::UtcNow.AddMilliseconds($QuietMilliseconds)
     } catch [System.TimeoutException] {}
@@ -385,7 +409,7 @@ function Assert-FmAudioProgress {
 }
 
 function ConvertFrom-HealthStatus([string]$Line) {
-  if ($Line -notmatch '^RTL_HEALTH_STATUS uptime_ms=(\d+) free_heap=(\d+) min_free_heap=(\d+) dma_free=(\d+) dma_min=(\d+) dma_largest=(\d+) tasks=(\d+) main_stack_hwm=(\d+) reset_reason=(\d+)$') {
+  if ($Line -notmatch '^RTL_HEALTH_STATUS uptime_ms=(\d+) free_heap=(\d+) min_free_heap=(\d+) dma_free=(\d+) dma_min=(\d+) dma_largest=(\d+) tasks=(\d+) main_stack_hwm=(\d+) reset_reason=(\d+)(?: [a-z_]+=\d+)*$') {
     throw "Malformed health status: $Line"
   }
   return [pscustomobject]@{
@@ -923,7 +947,7 @@ function Capture-ResetEvidence {
 function ConvertFrom-DriverStatus([string]$Line) {
   $pattern = 'version=(\S+) state=(\S+) profile=(\d+) profile_name="([^"]+)" provisional=([01]) device_caps=(0x[0-9a-fA-F]+) library_caps=(0x[0-9a-fA-F]+).*gain_auto_cap=([01]) rtl_agc_cap=([01]) gain_cap=([01]) bias_cap=([01]) mode=(AUTO|MANUAL) gain_tenth_db=(\d+) rtl_agc=([01]) bias=([01]) bytes=(\d+) blocks=(\d+) effective_sps=(\d+) overruns=(\d+) drops=(\d+) shadow_ok=([01]) metrics_ok=([01]) frequency_hz=(\d+) frequency_ok=([01]) route=(\S+)'
   if ($Line -notmatch $pattern) { throw "Malformed driver status: $Line" }
-  [pscustomobject]@{
+  $status = [pscustomobject]@{
     Version = $Matches[1]; State = $Matches[2]; Profile = [int]$Matches[3]
     ProfileName = $Matches[4]; Provisional = [int]$Matches[5]
     DeviceCaps = [Convert]::ToUInt32($Matches[6].Substring(2), 16)
@@ -935,6 +959,32 @@ function ConvertFrom-DriverStatus([string]$Line) {
     EffectiveSps = [uint32]$Matches[18]; Overruns = [uint32]$Matches[19]
     Drops = [uint32]$Matches[20]; ShadowOk = [int]$Matches[21]; MetricsOk = [int]$Matches[22]
     Frequency = [uint32]$Matches[23]; FrequencyOk = [int]$Matches[24]; Route = $Matches[25]
+  }
+  if ($Line -match ' bw_requested_hz=(\d+) bw_applied_hz=(\d+)$') {
+    $status | Add-Member -NotePropertyName BwRequested -NotePropertyValue ([uint32]$Matches[1])
+    $status | Add-Member -NotePropertyName BwApplied -NotePropertyValue ([uint32]$Matches[2])
+  }
+  return $status
+}
+function Assert-DongleGateSample($Before, $Current, $AudioBefore, $AudioAfter,
+                                 [uint32]$ExpectedFrequency, [int64]$ExpectedBw) {
+  if ($Current.State -ne 'STREAMING' -or $Current.ShadowOk -ne 1 -or
+      $Current.MetricsOk -ne 1 -or $Current.FrequencyOk -ne 1) {
+    throw "Driver unhealthy: $($Current.State) shadow=$($Current.ShadowOk) metrics=$($Current.MetricsOk) frequency_ok=$($Current.FrequencyOk)"
+  }
+  if ($Current.Frequency -ne $ExpectedFrequency) {
+    throw "Driver frequency drifted: expected=$ExpectedFrequency actual=$($Current.Frequency)"
+  }
+  if ($ExpectedBw -ge 0 -and $Current.BwRequested -ne $ExpectedBw) {
+    throw "Bandwidth request not reflected: expected=$ExpectedBw actual=$($Current.BwRequested)"
+  }
+  if ($Current.Bytes -le $Before.Bytes -or $Current.Drops -gt $Before.Drops -or
+      $Current.Overruns -gt $Before.Overruns) {
+    throw "IQ stalled or dropped: bytes=$($Before.Bytes)/$($Current.Bytes) drops=$($Before.Drops)/$($Current.Drops) overruns=$($Before.Overruns)/$($Current.Overruns)"
+  }
+  if ([uint64]$AudioAfter.audio_chunks -le [uint64]$AudioBefore.audio_chunks -or
+      [uint32]$AudioAfter.audio_drops -gt [uint32]$AudioBefore.audio_drops) {
+    throw "Audio stalled or dropped: chunks=$($AudioBefore.audio_chunks)/$($AudioAfter.audio_chunks) drops=$($AudioBefore.audio_drops)/$($AudioAfter.audio_drops)"
   }
 }
 
@@ -981,6 +1031,9 @@ function Test-IqGainApplied($Driver, [int]$ExpectedGain) {
 }
 
 function Invoke-SelfCheck {
+  if ((Protect-SerialLogLine 'AUTH_OK 0123456789abcdef') -ne 'AUTH_OK [redacted]') {
+    throw 'Authenticated serial log redaction failed.'
+  }
   if (-not (Test-FatalLine 'Guru Meditation Error: Core 1 panic')) { throw 'Fatal parser missed panic.' }
   if (-not (Test-FatalLine 'ESP-ROM:esp32p4-eco2-20240710')) { throw 'Fatal parser missed reset.' }
   if (Test-FatalLine 'RTL_UI_STATUS screen=home band=FM frequency_hz=96144000') {
@@ -1022,6 +1075,10 @@ function Invoke-SelfCheck {
   if ($health.UptimeMs -ne 123 -or $health.DmaLargest -ne 200 -or $health.MainStackHwm -ne 2048) {
     throw 'Health parser failed.'
   }
+  $extendedHealth = ConvertFrom-HealthStatus 'RTL_HEALTH_STATUS uptime_ms=123 free_heap=456 min_free_heap=400 dma_free=300 dma_min=250 dma_largest=200 tasks=12 main_stack_hwm=2048 reset_reason=1 internal_free=350 psram_free=1000'
+  if ($extendedHealth.UptimeMs -ne 123 -or $extendedHealth.ResetReason -ne 1) {
+    throw 'Extended health parser failed.'
+  }
   if (!(Test-UptimeAdvanced 4294967290 5) -or
       (Test-UptimeAdvanced 5000 100) -or
       (Test-UptimeAdvanced 100 100)) {
@@ -1043,6 +1100,19 @@ function Invoke-SelfCheck {
       $driver.Route -ne 'DIRECT_Q') {
     throw 'Driver acceptance parser failed.'
   }
+  $gateDriver = ConvertFrom-DriverStatus 'RTL_DRIVER_STATUS installed=1 version=0.9.0 state=STREAMING profile=2 profile_name="blog_v3_r820t2" provisional=0 device_caps=0x0001fbd9 library_caps=0x000fffff delivery=callback gain_auto_cap=1 rtl_agc_cap=1 gain_cap=1 bias_cap=0 mode=AUTO gain_tenth_db=0 rtl_agc=0 bias=0 bytes=200000 blocks=50 effective_sps=2400000 overruns=0 drops=0 shadow_ok=1 metrics_ok=1 frequency_hz=96113000 frequency_ok=1 route=TUNER bw_requested_hz=200000 bw_applied_hz=200000'
+  if ($gateDriver.BwRequested -ne 200000 -or $gateDriver.BwApplied -ne 200000) {
+    throw 'Driver bandwidth state parser failed.'
+  }
+  $gateBefore = [pscustomobject]@{ State = 'STREAMING'; Bytes = [uint64]100000; Drops = [uint32]0; Overruns = [uint32]0 }
+  $gateAudioBefore = [pscustomobject]@{ audio_chunks = [uint64]10; audio_drops = [uint32]0 }
+  $gateAudioAfter = [pscustomobject]@{ audio_chunks = [uint64]12; audio_drops = [uint32]0 }
+  Assert-DongleGateSample $gateBefore $gateDriver $gateAudioBefore $gateAudioAfter 96113000 200000
+  $badGate = $gateDriver.PSObject.Copy()
+  $badGate.Frequency = [uint32]96114000
+  $caughtGateFailure = $false
+  try { Assert-DongleGateSample $gateBefore $badGate $gateAudioBefore $gateAudioAfter 96113000 200000 } catch { $caughtGateFailure = $true }
+  if (!$caughtGateFailure) { throw 'Dongle gate missed frequency drift.' }
   $iqDiag = ConvertFrom-IqDiagnosticStart 'RTL_IQ_DIAG_START transition="cold_fm" sequence=7 bytes=4800000 rate=2400000 frequency_hz=99100000 started_ms=1234'
   if ($iqDiag.Transition -ne 'cold_fm' -or $iqDiag.Sequence -ne 7 -or
       $iqDiag.Bytes -ne 4800000 -or $iqDiag.Rate -ne 2400000 -or
@@ -1084,7 +1154,7 @@ if (($InstallLaneMap -or $InstallFaaAircraft) -and !$DataOnly) {
   throw '-InstallLaneMap and -InstallFaaAircraft require -DataOnly.'
 }
 if ($IqHotTune -and !$IqDiagnostic) { throw '-IqHotTune requires -IqDiagnostic.' }
-if (@($SelfCheck, $Run, $Soak, $Driver080Rc3, $WifiOnly, $WifiCoexistence, $WifiCoexistenceDiagnostic, $DataOnly, $OfflineCatalog, $C6Update, $RadioScan, $AmBroadcast, $GainSweep, $IqDiagnostic, $SdSelfCheck, $SdBenchmark).Where({ $_ }).Count -gt 1) {
+if (@($SelfCheck, $Run, $Soak, $Driver080Rc3, $WifiOnly, $WifiCoexistence, $WifiCoexistenceDiagnostic, $DataOnly, $OfflineCatalog, $C6Update, $RadioScan, $AmBroadcast, $GainSweep, $IqDiagnostic, $SdSelfCheck, $SdBenchmark, [bool]$DongleGate).Where({ $_ }).Count -gt 1) {
   throw 'Choose only one primary test mode.'
 }
 if ($SelfCheck) { Invoke-SelfCheck; exit 0 }
@@ -1131,6 +1201,141 @@ function Get-DriverStatus {
   throw "Malformed driver status: $line"
 }
 
+function Invoke-DongleGate {
+  Wait-DeviceReady 60
+  Connect-Authenticated
+  $frequency = Get-RadioFrequency
+  if ($frequency.Band -ne 'FM') { throw "Dongle gate requires FM; current band=$($frequency.Band)" }
+  $sound = Send-And-Wait 'RTL_SOUND' '^RTL_SOUND_STATUS enabled=[01]$'
+  if ($sound -notmatch 'enabled=1$') { throw 'Dongle gate requires FM sound ON; no setting was changed.' }
+  # Opening the port can reset the Tab5; the dongle needs a few seconds to stream,
+  # and a Wi-Fi reconnect after boot can pause the radio. Require streaming to hold
+  # for 8 consecutive seconds before taking the baseline.
+  $streamDeadline = [DateTime]::UtcNow.AddSeconds(90)
+  $stableSince = $null
+  do {
+    $driver = Get-DriverStatus
+    if ($driver.State -eq 'STREAMING' -and $driver.FrequencyOk -eq 1) {
+      if ($null -eq $stableSince) { $stableSince = [DateTime]::UtcNow }
+      if (([DateTime]::UtcNow - $stableSince).TotalSeconds -ge 8) { break }
+    } else { $stableSince = $null }
+    $script:serial.WriteLine('PING')
+    Start-Sleep -Milliseconds 500
+  } while ([DateTime]::UtcNow -lt $streamDeadline)
+  $driver = Get-DriverStatus
+  $expectedProfile = @{ V3c = 'blog_v3_r820t2'; V4 = 'blog_v4_r828d'; V4L = 'blog_v4l_r828s' }[$DongleGate]
+  if ($driver.ProfileName -ne $expectedProfile -or $driver.Route -ne 'TUNER') {
+    throw "Expected $DongleGate tuner path ($expectedProfile), got $($driver.ProfileName) route=$($driver.Route)"
+  }
+  if ($driver.State -ne 'STREAMING' -or $driver.BwRequested -eq $null) {
+    throw "Driver not ready for gate: state=$($driver.State) bw_requested=$($driver.BwRequested)"
+  }
+  if ($WaitForReplug) {
+    Write-SoakLine 'RTL_DONGLE_GATE_WAIT_REPLUG unplug the dongle, wait a few seconds, plug it back in'
+    $replugDeadline = [DateTime]::UtcNow.AddSeconds(240)
+    $script:sawDisconnect = $false; $sawGone = $false; $backSince = $null
+    while ([DateTime]::UtcNow -lt $replugDeadline) {
+      $d = Get-DriverStatus
+      # Only a real USB disconnect counts; a Wi-Fi pause also leaves STREAMING briefly.
+      if ($script:sawDisconnect) { $sawGone = $true }
+      if ($d.State -ne 'STREAMING') { $backSince = $null }
+      elseif ($sawGone) {
+        if ($null -eq $backSince) { $backSince = [DateTime]::UtcNow }
+        if (([DateTime]::UtcNow - $backSince).TotalSeconds -ge 8) { break }
+      }
+      $script:serial.WriteLine('PING')
+      Start-Sleep -Milliseconds 500
+    }
+    if (-not $sawGone) { throw 'Replug wait timed out: the driver never left STREAMING.' }
+    $driver = Get-DriverStatus
+    if ($driver.State -ne 'STREAMING' -or $driver.ProfileName -ne $expectedProfile) {
+      throw "After replug: state=$($driver.State) profile=$($driver.ProfileName)"
+    }
+    Write-SoakLine "RTL_DONGLE_GATE_REPLUG_OK profile=$($driver.ProfileName) state=$($driver.State)"
+  }
+  $initialBw = $driver.BwRequested
+  $initialFrequency = $frequency.Frequency
+  Write-SoakLine "RTL_DONGLE_GATE_BEGIN dongle=$DongleGate profile=$($driver.ProfileName) frequency_hz=$initialFrequency driver_hz=$($driver.Frequency) bw_requested_hz=$initialBw log=$($script:soakLogPath)"
+  try {
+    $selfCheck = Send-And-Wait 'RTL_DRIVER SELF_CHECK' '^RTL_DRIVER_SELF_CHECK '
+    if ($selfCheck -notmatch 'pass=1 ') { throw "Driver self-check failed: $selfCheck" }
+    Assert-Health
+    if ($GateIq) { Save-GateIqSnapshot 'baseline' }
+    $before = Get-DriverStatus
+    $beforeAudio = Get-AudioStatus
+
+    # V3c defaults to 200 kHz then AUTO; V4/V4L run bandwidth stages only when asked.
+    $stages = if ($DongleGate -eq 'V3c' -or $script:gateBandwidthsExplicit) { $GateBandwidths } else { @() }
+    foreach ($bandwidth in $stages) {
+      $reply = Send-And-Wait "RTL_DRIVER BW $bandwidth" '^RTL_DRIVER_RESULT '
+      if ($reply -notmatch 'accepted=1 result=ESP_OK$') { throw "Bandwidth command failed: $reply" }
+      Write-SoakLine "RTL_DONGLE_GATE_VISUAL dongle=$DongleGate stage=bw_$bandwidth inspect_spectrum_and_audio=1 seconds=$VisualDwellSeconds"
+      for ($second = 1; $second -le $VisualDwellSeconds; $second++) {
+        $script:serial.WriteLine('PING')
+        Start-Sleep -Seconds 1
+        if ($second % 5 -eq 0) { [void](Send-And-Wait 'RTL_SIGNAL' '^RTL_SIGNAL_STATUS ') }
+      }
+      # The device drops the session after 5 s without host traffic; a long
+      # visual dwell must not turn the next privileged command into auth_required.
+      Connect-Authenticated
+      $current = Get-DriverStatus
+      $afterAudio = Get-AudioStatus
+      Assert-DongleGateSample $before $current $beforeAudio $afterAudio $driver.Frequency $bandwidth
+      Write-SoakLine "RTL_DONGLE_GATE_STAGE stage=bw_$bandwidth serial_pass=1 bw_applied_hz=$($current.BwApplied) visual=pending"
+      if ($GateIq) {
+        Save-GateIqSnapshot "bw_$bandwidth"
+        $current = Get-DriverStatus
+        $afterAudio = Get-AudioStatus
+      }
+      $before = $current
+      $beforeAudio = $afterAudio
+    }
+
+    $offset = if ($initialFrequency -ge 107900000) { -100000 } else { 100000 }
+    [uint32]$otherFrequency = [int64]$initialFrequency + $offset
+    [void](Send-And-Wait "RTL_FREQ $otherFrequency" '^RTL_FREQ_OK ' 20)
+    $retuneDeadline = [DateTime]::UtcNow.AddSeconds(10)
+    do {
+      $intermediate = Get-DriverStatus
+      if ($intermediate.Frequency -eq [uint32]([int64]$driver.Frequency + $offset)) { break }
+      Start-Sleep -Milliseconds 100
+    } while ([DateTime]::UtcNow -lt $retuneDeadline)
+    if ($intermediate.Frequency -ne [uint32]([int64]$driver.Frequency + $offset)) {
+      throw "Intermediate retune did not apply: frequency_hz=$($intermediate.Frequency)"
+    }
+    [void](Send-And-Wait "RTL_FREQ $initialFrequency" '^RTL_FREQ_OK ' 20)
+    Write-SoakLine "RTL_DONGLE_GATE_VISUAL dongle=$DongleGate stage=retune inspect_spectrum_and_audio=1 seconds=$VisualDwellSeconds"
+    for ($second = 1; $second -le $VisualDwellSeconds; $second++) {
+      $script:serial.WriteLine('PING')
+      Start-Sleep -Seconds 1
+      if ($second % 5 -eq 0) { [void](Send-And-Wait 'RTL_SIGNAL' '^RTL_SIGNAL_STATUS ') }
+    }
+    Connect-Authenticated
+    [void](Send-And-Wait 'RTL_SIGNAL' '^RTL_SIGNAL_STATUS ')
+    $current = Get-DriverStatus
+    $afterAudio = Get-AudioStatus
+    Assert-DongleGateSample $before $current $beforeAudio $afterAudio $driver.Frequency $(if ($stages.Count -gt 0) { $stages[-1] } else { $initialBw })
+    if ((Get-RadioFrequency).Frequency -ne $initialFrequency) { throw 'UI frequency did not return after retune.' }
+    Assert-Health
+    if ($GateIq) { Save-GateIqSnapshot 'retune' }
+    Write-SoakLine "RTL_DONGLE_GATE_RESULT dongle=$DongleGate serial_pass=1 visual=pending"
+  } finally {
+    try {
+      Connect-Authenticated
+      if ((Get-RadioFrequency).Frequency -ne $initialFrequency) {
+        [void](Send-And-Wait "RTL_FREQ $initialFrequency" '^RTL_FREQ_OK ' 20)
+      }
+      $currentBw = (Get-DriverStatus).BwRequested
+      if ($currentBw -ne $initialBw) {
+        [void](Send-And-Wait "RTL_DRIVER BW $initialBw" '^RTL_DRIVER_RESULT .*accepted=1 result=ESP_OK$' 20)
+      }
+      Write-SoakLine "RTL_DONGLE_GATE_RESTORE frequency_hz=$initialFrequency bw_requested_hz=$initialBw"
+    } catch {
+      Write-Warning "Could not restore initial dongle state: $($_.Exception.Message)"
+    }
+  }
+}
+
 function Read-ExactSerialBytes([IO.Stream]$Output, [Security.Cryptography.IncrementalHash]$Hash, [int]$Count) {
   $buffer = [byte[]]::new([Math]::Min(4096, $Count))
   $remaining = $Count
@@ -1149,6 +1354,70 @@ function Read-ExactSerialBytes([IO.Stream]$Output, [Security.Cryptography.Increm
       }
     }
   }
+}
+
+function Receive-IqCapture([string]$Output, [int]$ExpectedBytes) {
+  $parent = Split-Path -Parent $Output
+  if ($parent) { [void](New-Item -ItemType Directory -Force $parent) }
+  if (Test-Path -LiteralPath $Output) { throw "IQ output already exists: $Output" }
+  $partial = "$Output.partial"
+  $ready = Send-And-Wait 'RTL_IQ_GET_BEGIN' '^RTL_IQ_GET_(?:READY|ERROR) ' 10
+  if ($ready -notmatch '^RTL_IQ_GET_READY chunk=(\d+) bytes=(\d+)$') {
+    throw "IQ retrieval could not begin: $ready"
+  }
+  $chunkBytes = [int]$Matches[1]
+  $totalBytes = [int]$Matches[2]
+  if ($totalBytes -ne $ExpectedBytes) {
+    throw "IQ byte count changed: start=$ExpectedBytes retrieve=$totalBytes"
+  }
+
+  $hash = [Security.Cryptography.IncrementalHash]::CreateHash(
+      [Security.Cryptography.HashAlgorithmName]::SHA256)
+  $stream = [IO.File]::Open($partial, [IO.FileMode]::Create,
+                            [IO.FileAccess]::Write, [IO.FileShare]::None)
+  try {
+    $remaining = $totalBytes
+    while ($remaining -gt 0) {
+      $line = Send-And-WaitBinary 'RTL_IQ_GET_CHUNK' '^RTL_IQ_GET_(?:DATA|ERROR) ' 10
+      if ($line -notmatch '^RTL_IQ_GET_DATA bytes=(\d+)$') {
+        throw "IQ retrieval failed: $line"
+      }
+      $count = [int]$Matches[1]
+      if ($count -le 0 -or $count -gt $chunkBytes -or $count -gt $remaining) {
+        throw "Invalid IQ chunk size: $count"
+      }
+      Read-ExactSerialBytes $stream $hash $count
+      $remaining -= $count
+    }
+  } finally {
+    $stream.Dispose()
+  }
+  $localSha = [Convert]::ToHexString($hash.GetHashAndReset()).ToLowerInvariant()
+  $hash.Dispose()
+  $finish = Read-BinaryMatchingLine '^RTL_IQ_GET_DONE ' 10
+  if ($finish -notmatch '^RTL_IQ_GET_DONE bytes=(\d+) sha256=([0-9a-fA-F]{64})$' -or
+      [int]$Matches[1] -ne $totalBytes -or $Matches[2].ToLowerInvariant() -ne $localSha) {
+    throw "IQ retrieval hash mismatch: local=$localSha device='$finish'"
+  }
+  Move-Item -LiteralPath $partial -Destination $Output
+  return $localSha
+}
+
+# Capture one second of live IQ without stopping reception, so the dongle's
+# transient state is recorded exactly as the user sees it on screen.
+function Save-GateIqSnapshot([string]$Label) {
+  $status = Send-And-Wait 'RTL_IQ_DIAG_STATUS' '^RTL_IQ_DIAG_STATUS ' 10
+  if ($status -match ' ready=1 ') {
+    [void](Send-And-Wait 'RTL_IQ_RETRIEVE_END' '^RTL_IQ_RETRIEVE_(?:DONE|RESUMING)$' 10)
+  }
+  $startLine = Send-And-Wait "RTL_IQ_DIAG_START gate-$Label" '^RTL_IQ_DIAG_(?:START|ERROR) ' 10
+  if ($startLine -notmatch '^RTL_IQ_DIAG_START ') { throw "IQ snapshot rejected: $startLine" }
+  $start = ConvertFrom-IqDiagnosticStart $startLine
+  [void](Read-MatchingLine '^RTL_IQ_DONE storage=psram source=diagnostic ' 15)
+  $output = [IO.Path]::ChangeExtension($script:soakLogPath, $null).TrimEnd('.') + "-$Label.cu8"
+  $sha = Receive-IqCapture $output $start.Bytes
+  [void](Send-And-Wait 'RTL_IQ_RETRIEVE_END' '^RTL_IQ_RETRIEVE_(?:DONE|RESUMING)$' 10)
+  Write-SoakLine "RTL_DONGLE_GATE_IQ stage=$Label rate=$($start.Rate) frequency_hz=$($start.Frequency) bytes=$($start.Bytes) sha256=$sha path=$output"
 }
 
 function Invoke-IqDiagnosticCapture {
@@ -1214,50 +1483,8 @@ function Invoke-IqDiagnosticCapture {
     [void](New-Item -ItemType Directory -Force $directory)
     Join-Path ([IO.Path]::GetFullPath($directory)) ((Get-Date -Format 'yyyyMMdd-HHmmss') + "-$IqTransition.cu8")
   }
-  $parent = Split-Path -Parent $output
-  if ($parent) { [void](New-Item -ItemType Directory -Force $parent) }
-  if (Test-Path -LiteralPath $output) { throw "IQ output already exists: $output" }
-  $partial = "$output.partial"
-
-  $ready = Send-And-Wait 'RTL_IQ_GET_BEGIN' '^RTL_IQ_GET_(?:READY|ERROR) ' 10
-  if ($ready -notmatch '^RTL_IQ_GET_READY chunk=(\d+) bytes=(\d+)$') {
-    throw "IQ retrieval could not begin: $ready"
-  }
-  $chunkBytes = [int]$Matches[1]
-  $totalBytes = [int]$Matches[2]
-  if ($totalBytes -ne $start.Bytes) {
-    throw "IQ byte count changed: start=$($start.Bytes) retrieve=$totalBytes"
-  }
-
-  $hash = [Security.Cryptography.IncrementalHash]::CreateHash(
-      [Security.Cryptography.HashAlgorithmName]::SHA256)
-  $stream = [IO.File]::Open($partial, [IO.FileMode]::Create,
-                            [IO.FileAccess]::Write, [IO.FileShare]::None)
-  try {
-    $remaining = $totalBytes
-    while ($remaining -gt 0) {
-      $line = Send-And-WaitBinary 'RTL_IQ_GET_CHUNK' '^RTL_IQ_GET_(?:DATA|ERROR) ' 10
-      if ($line -notmatch '^RTL_IQ_GET_DATA bytes=(\d+)$') {
-        throw "IQ retrieval failed: $line"
-      }
-      $count = [int]$Matches[1]
-      if ($count -le 0 -or $count -gt $chunkBytes -or $count -gt $remaining) {
-        throw "Invalid IQ chunk size: $count"
-      }
-      Read-ExactSerialBytes $stream $hash $count
-      $remaining -= $count
-    }
-  } finally {
-    $stream.Dispose()
-  }
-  $localSha = [Convert]::ToHexString($hash.GetHashAndReset()).ToLowerInvariant()
-  $hash.Dispose()
-  $finish = Read-BinaryMatchingLine '^RTL_IQ_GET_DONE ' 10
-  if ($finish -notmatch '^RTL_IQ_GET_DONE bytes=(\d+) sha256=([0-9a-fA-F]{64})$' -or
-      [int]$Matches[1] -ne $totalBytes -or $Matches[2].ToLowerInvariant() -ne $localSha) {
-    throw "IQ retrieval hash mismatch: local=$localSha device='$finish'"
-  }
-  Move-Item -LiteralPath $partial -Destination $output
+  $localSha = Receive-IqCapture $output $start.Bytes
+  $totalBytes = $start.Bytes
   [void](Send-And-Wait 'RTL_IQ_RETRIEVE_END' '^RTL_IQ_RETRIEVE_(?:DONE|RESUMING)$' 10)
 
   $driverAfterRetrieval = Get-DriverStatus
@@ -1860,6 +2087,8 @@ try {
     }
     exit $(if ($sendIncomplete) { 1 } else { 0 })
   }
+
+  if ($DongleGate) { Invoke-DongleGate; exit 0 }
 
   if ($SetSplashGate) {
     Wait-DeviceReady 60

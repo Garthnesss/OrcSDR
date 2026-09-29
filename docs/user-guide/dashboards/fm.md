@@ -18,4 +18,4 @@ Program Service, Radio Text, PI, and PTY appear only after valid RDS groups arri
 
 ## RF Health
 
-Use this page when audio breaks up. Effective sample rate should remain near the 960 kS/s target, while USB overruns, consumer drops, and audio underruns should remain zero.
+Use this page when audio breaks up. In normal FM listening, effective device sample rate should remain near the 2.40 MS/s target; the internal FM MPX rate is 240 kS/s. USB overruns, consumer drops, and audio underruns should remain zero during steady reception.

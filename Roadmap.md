@@ -6,6 +6,23 @@ release notes and dated validation reports.
 
 ## Near-term product gaps
 
+### Revisit DSP rates by workload, not as a universal WFM frontend
+
+Stage-2 multirate research is closed; its current Tab5 candidates did not
+provide 3.20 MS/s WFM realtime headroom. Future, separately gated work could
+use mode-specific lower channel rates (for example NFM/WX 48/96 kS/s and
+lower-rate AM), a proper SSB channel/sideband filter, and exact rational
+conversion only where useful. Separate high-rate acquisition for raw IQ,
+spectrum, scans or multiple channels from the much lower rate of one audio
+channel, and accept each workload independently.
+
+If a concrete performance target justifies it, test fewer-tap/fused/direct-/4
+coarse decimation or qualified P4 PIE/SIMD FIR code; do not rely on unqualified
+HWLOOP behavior. The driver IQ copy/zero-copy idea is lower priority without
+a measured bottleneck. Carry driver sequence/flags, pipeline-drop state and
+retune/rate-transition markers through `RtlIqBlock` so later continuity
+claims have explicit evidence. None of these are current capabilities.
+
 ### Reduce `main.cpp` ownership
 
 Continue moving receiver lifecycle, band policy, Wi-Fi/catalog orchestration,

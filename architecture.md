@@ -4,6 +4,11 @@ This describes the release branch at `d30a033` on 2026-09-15. Historical plans
 and validation reports explain how the design arrived here but are not current
 architecture contracts.
 
+The accepted Stage-1 production DSP path (developed on `claude/dsp-multirate`,
+formerly draft PR #114) is part of `main` as of v0.3.0-beta.1; the Stage-2 multirate
+lab is not production architecture. Historical evidence is in the dated
+[DSP closeout](docs/validation/dsp-stage1-stage2-closeout-2026-09-27.md).
+
 ## Platform and dependency boundary
 
 OrcSDR's production Tab5 firmware is a native ESP-IDF 5.5.4 application for
@@ -12,8 +17,8 @@ ESP32-P4. The onboard ESP32-C6 runs matching ESP-Hosted 3.0.6 firmware and uses
 historical and unsupported.
 
 The portable receiver boundary is the external `esp-rtl-sdr` component,
-0.8.0-rc3, pinned immutably at
-`52edd9b6e591fbd5f3985af4dc51e9da60e04cad` by
+published release `v0.9.1` (it reports `0.9.1`), pinned immutably at
+`105caa56b9b5ce395a7b4910c6f703c14b83b5d9` by
 `apps/orcsdr-tab5/main/idf_component.yml` and
 `apps/orcsdr-tab5/dependencies.lock`. OrcSDR uses callback delivery and owns
 DSP, UI, storage, and product behavior above that driver. The old local USB
@@ -29,7 +34,7 @@ Wi-Fi pause/resume orchestration; catalog operations; serial and authenticated
 device commands; SD/IQ/audio transfers; LAN console command dispatch;
 documentation capture; screen transitions; and top-level touch routing.
 
-main.cpp measurement (Git-normalized): 800,086 bytes (~781.3 KiB), 17,544 lines.
+main.cpp measurement (Git-normalized): 860,383 bytes (~840.2 KiB), 18,832 lines.
 
 The measurement uses LF-normalized repository bytes so it is stable across
 Windows and Linux checkouts. The intended modular endpoint—roughly 500 lines of
@@ -62,6 +67,20 @@ labels do not imply dedicated decoders or complete demodulation modes.
 - Protocol/DSP cores hold host-testable decode logic where already separated.
 - `main.cpp` still adapts IQ callbacks, mode policy, audio, tune changes, and
   snapshots into those modules.
+- `rtl_dsp_task` alone owns stateful demodulator/RDS state.
+  Other tasks request demod, RDS, SSB-BFO or full resets; the DSP task applies
+  them in deterministic order at IQ-block boundaries. Block-local hot state,
+  fused clipping/level work, batched RDS, measured FM/SSB `noinline` and the
+  overload yield remain in the normal path.
+- `rtl_default_sample_rate()` selects 2.40 MS/s device acquisition for FM,
+  NFM/Weather, AM, CB, Shortwave and Browse; other mode defaults differ.
+  The current WFM demodulator reduces that to 240 kS/s MPX and 48 kHz audio.
+  Device rate, spectrum/analysis rate and audio-demod rate are distinct.
+  Custom-rate RF Lab acquisition does not imply audio at that rate.
+- D/D2/D3 and their live exclusive-routing commands are compiled only with
+  `ORCSDR_DSP_LAB=1`; the normal builder explicitly passes `0`, as it does
+  for the independent Stage-1 A/B harness. No experimental frontend replaces
+  the existing production demodulator.
 
 Receiver profiles are selected inside the single driver API. Blog V4 is the
 tested baseline; Blog V3/V3C and Nooelec profiles exist with experimental
