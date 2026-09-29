@@ -86,12 +86,12 @@ $manifest = [ordered]@{
   github = 'https://github.com/hardcoreerik/OrcSDR'
   firmware = (Split-Path $image -Leaf)
   sha256 = $hash
-  required_accessory = 'RTL-SDR Blog V4'
+  required_accessory = 'RTL-SDR Blog V4, V4L or V3/V3c'
   c6_requirement = 'Embedded C6 3.0.6 image; update only from Firmware & Updates after confirmation.'
   c6_firmware = "c6/$($c6Provenance.firmware)"
   c6_sha256 = $c6Provenance.sha256
   c6_source_revision = $c6Provenance.source_revision
-  erase_policy = 'Do not erase for normal upgrades.'
+  erase_policy = 'An M5Burner install rewrites flash from address 0 and resets saved settings (NVS): Wi-Fi profiles, location, rotation. To keep settings, flash the P4 application manually (see docs/M5BURNER_RELEASE.md).'
 }
 $manifest | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $dist 'm5burner-upload.json')
 @(
@@ -99,7 +99,8 @@ $manifest | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $dist 'm5burner
   '',
   'This package contains the P4 application and a pinned C6 Hosted 3.0.6 update image.',
   'If the reachable C6 version differs, open Settings > Firmware & Updates and confirm the in-app update.',
-  'Normal upgrades: do not erase; this preserves OrcSDR settings and saved Wi-Fi profiles.',
+  'Saved settings WILL BE RESET by an M5Burner install (Wi-Fi profiles, location, screen rotation).',
+  'Write them down first. To keep settings, flash the application manually (docs/M5BURNER_RELEASE.md).',
   "SHA-256: $hash"
 ) | Set-Content -LiteralPath (Join-Path $dist 'README.txt')
 Copy-Item -LiteralPath $releaseNotesSource `
@@ -122,7 +123,7 @@ Copy-Item -LiteralPath $releaseNotesSource `
   -Destination (Join-Path $localRoot 'RELEASE_NOTES.txt') -Force
 $localManifest = [ordered]@{
   name = "OrcSDR $Version"
-  description = 'OrcSDR P4 application for private Tab5 testing. Do not erase for normal upgrades.'
+  description = 'OrcSDR P4 application for private Tab5 testing. Installing resets saved settings; see docs/M5BURNER_RELEASE.md.'
   keywords = 'Tab5, RTL-SDR, ESP-IDF'
   author = 'hardcoreerik'
   repository = 'https://github.com/hardcoreerik/OrcSDR'

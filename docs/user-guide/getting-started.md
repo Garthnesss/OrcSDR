@@ -12,11 +12,14 @@
 
 ## Install with M5Burner
 
-The current supported user package is
-[`v0.2.0-beta.6-multidongle-rc4`](https://github.com/hardcoreerik/OrcSDR/releases/tag/v0.2.0-beta.6-multidongle-rc4).
-Open M5Burner, select the OrcSDR Tab5 package, and burn it without erasing user
-settings unless recovery instructions require an erase. The package carries
-matching ESP-Hosted 3.0.6 firmware for the onboard C6.
+The current release is
+[`v0.3.0-beta.1`](https://github.com/hardcoreerik/OrcSDR/releases/tag/v0.3.0-beta.1).
+Open M5Burner, select the OrcSDR Tab5 package, and burn it. **An M5Burner install resets your saved
+settings** (Wi-Fi profiles, location, screen rotation), so write them down first and expect to re-enter
+them. The package carries matching ESP-Hosted 3.0.6 firmware for the onboard C6.
+
+To keep your settings, flash the application manually instead; see
+[`docs/M5BURNER_RELEASE.md`](https://github.com/hardcoreerik/OrcSDR/blob/main/docs/M5BURNER_RELEASE.md).
 
 Current M5Burner search visibility was not independently reverified during the
 documentation audit. If the entry is not visible, use the exact release page
