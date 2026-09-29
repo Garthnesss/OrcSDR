@@ -20,7 +20,7 @@ Read the [RTL-SDR Blog feature](https://www.rtl-sdr.com/orcsdr-running-rtl-sdr-d
 
 ## Get started
 
-1. Open **M5Burner**, search for **OrcSDR**, and burn the current release to an M5Stack Tab5.
+1. Open **M5Burner**, search for **OrcSDR**, and burn the current release to an M5Stack Tab5. Note: an M5Burner install resets your saved settings (Wi-Fi profiles, location, rotation), so write them down first; the [Getting Started guide](docs/user-guide/getting-started.md) explains how to keep them.
 2. Restart the Tab5, then connect a supported RTL-SDR receiver to its USB host port.
 3. Connect an antenna suitable for the signals you want to receive and choose a dashboard.
 

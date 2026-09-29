@@ -7,12 +7,25 @@ is reachable.
 
 ## Required order
 
-1. Install **OrcSDR** through M5Burner without erase.
+1. Install **OrcSDR** through M5Burner. **This resets saved settings** (see below).
 2. Open **Settings → Firmware & Updates**.
 3. If the reachable C6 differs from 3.0.6, explicitly confirm **UPDATE C6 TO 3.0.6**.
 4. After restart, verify `host=3.0.6 coprocessor=3.0.6 match=1`.
 
-The normal flow preserves P4 NVS, saved Wi-Fi profiles, and preferences. A C6
+## Saved settings and M5Burner
+
+An M5Burner install **does not preserve** P4 NVS: Wi-Fi profiles, location, screen rotation and
+other preferences are reset, even without an erase option
+([#117](https://github.com/hardcoreerik/OrcSDR/issues/117), observed on v0.3.0-beta.1, 2026-09-28). The
+uploaded image is one contiguous file from address 0, and the NVS partition (0x9000 to 0xF000) is blank
+padding inside it. Earlier documentation that said otherwise was wrong.
+
+To **keep** settings, flash only the regions that hold code: bootloader at 0x2000, partition table at
+0x8000 and the application at 0x10000. Nothing is written to NVS (0x9000) or the C6. The bundle's
+`local-m5burner/firmware/` folder has those three files and a `flash.sh`; `install-orcsdr.ps1` does the same
+from a source checkout. A packaged installer for users is planned.
+
+A C6
 that cannot establish Hosted transport is a manual recovery case; the separate
 Bridge builder is retained only for support recovery and is not published.
 
