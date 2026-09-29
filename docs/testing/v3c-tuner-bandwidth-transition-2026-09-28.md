@@ -192,9 +192,7 @@ and `cycle_report.py <prefix> --plot`.
 
 ## Merge sequence (proposed, nothing merged)
 
-1. `esp-rtl-sdr`: publish `codex/bandwidth-transition-v3-v4` (two fix commits and one docs commit on PR #29's
-   `c6d50dd`), review, merge without squashing so the commit ids stay the ones pinned here; then tag/version
-   as the maintainer decides.
+1. `esp-rtl-sdr` PR #31 (https://github.com/hardcoreerik/esp-rtl-sdr/pull/31, branch `codex/bandwidth-transition-v3-v4`, pinned commit `2c6895d`): two fix commits and one docs commit stacked on PR #29's head `c6d50dd`. Merge #29 first, then #31, both without squashing or rebasing so the pinned commit id survives; then tag/version as the maintainer decides.
 2. `OrcSDR`: `codex/v3c-tuner-bw-acceptance` (harness and tools, this document and evidence, dependency pin +
    lockfile) onto the gold branch `codex/v3c-am-rtl-agc`. If the driver merge changes the commit id, update
    `main/idf_component.yml` and regenerate `dependencies.lock` (`idf.py reconfigure`), then rebuild from a clean
